@@ -12,12 +12,26 @@ Analyze the vehicle history report and return STRICT JSON:
 {
   "score": number (0-100),
   "verdict": "BUY" | "CAUTION" | "AVOID",
-  "risks": ["short bullet points"],
+  "summary": "clear explanation for buyer",
+  "bottom_line": "direct recommendation in 1-2 sentences",
   "price_insight": "1 sentence",
-  "summary": "clear explanation for buyer"
+  "price_guidance": "what price discount or pricing condition would make this worth considering",
+  "confidence_note": "short note about limitations of report-only analysis",
+  "top_reasons": ["top 3 reasons behind the verdict"],
+  "why_it_matters": ["why the key issues matter to a buyer"],
+  "major_deal_breakers": ["serious red flags"],
+  "needs_inspection": ["items a mechanic should inspect closely"],
+  "negotiation_leverage": ["issues the buyer can use to negotiate price"],
+  "inspection_checklist": ["specific pre-purchase inspection tasks"],
+  "risks": ["short bullet points"],
+  "who_should_avoid": ["types of buyers who should avoid this vehicle"],
+  "dealer_questions": ["smart questions to ask the dealer"],
+  "mechanic_focus": ["mechanic inspection priorities"],
+  "fair_price_assessment": "short statement on whether the asking price would need a discount"
 }
 
-Be strict, realistic, and practical."""
+Be strict, realistic, practical, and decision-oriented.
+Focus on helping the buyer decide what to do next, not just summarizing history."""
 
 
 class AIProcessingError(Exception):
@@ -104,9 +118,22 @@ def request_with_chat_completions(client: OpenAI, model: str, report_text: str) 
 def normalize_analysis(result: dict[str, Any]) -> dict[str, Any]:
     score = result.get("score", 0)
     verdict = str(result.get("verdict", "CAUTION")).upper()
-    risks = result.get("risks", [])
-    price_insight = str(result.get("price_insight", "")).strip()
     summary = str(result.get("summary", "")).strip()
+    bottom_line = str(result.get("bottom_line", "")).strip()
+    price_insight = str(result.get("price_insight", "")).strip()
+    price_guidance = str(result.get("price_guidance", "")).strip()
+    confidence_note = str(result.get("confidence_note", "")).strip()
+    fair_price_assessment = str(result.get("fair_price_assessment", "")).strip()
+    risks = normalize_list(result.get("risks", []))
+    top_reasons = normalize_list(result.get("top_reasons", []))
+    why_it_matters = normalize_list(result.get("why_it_matters", []))
+    major_deal_breakers = normalize_list(result.get("major_deal_breakers", []))
+    needs_inspection = normalize_list(result.get("needs_inspection", []))
+    negotiation_leverage = normalize_list(result.get("negotiation_leverage", []))
+    inspection_checklist = normalize_list(result.get("inspection_checklist", []))
+    who_should_avoid = normalize_list(result.get("who_should_avoid", []))
+    dealer_questions = normalize_list(result.get("dealer_questions", []))
+    mechanic_focus = normalize_list(result.get("mechanic_focus", []))
 
     if not isinstance(score, int):
         try:
@@ -119,15 +146,29 @@ def normalize_analysis(result: dict[str, Any]) -> dict[str, Any]:
     if verdict not in {"BUY", "CAUTION", "AVOID"}:
         verdict = "CAUTION"
 
-    if not isinstance(risks, list):
-        risks = [str(risks)] if risks else []
-
-    risks = [str(item).strip() for item in risks if str(item).strip()]
-
     return {
         "score": score,
         "verdict": verdict,
-        "risks": risks,
-        "price_insight": price_insight,
         "summary": summary,
+        "bottom_line": bottom_line,
+        "price_insight": price_insight,
+        "price_guidance": price_guidance,
+        "confidence_note": confidence_note,
+        "fair_price_assessment": fair_price_assessment,
+        "top_reasons": top_reasons,
+        "why_it_matters": why_it_matters,
+        "major_deal_breakers": major_deal_breakers,
+        "needs_inspection": needs_inspection,
+        "negotiation_leverage": negotiation_leverage,
+        "inspection_checklist": inspection_checklist,
+        "risks": risks,
+        "who_should_avoid": who_should_avoid,
+        "dealer_questions": dealer_questions,
+        "mechanic_focus": mechanic_focus,
     }
+
+
+def normalize_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        value = [str(value)] if value else []
+    return [str(item).strip() for item in value if str(item).strip()]

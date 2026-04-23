@@ -53,8 +53,9 @@
         'AVOID': 'bg-rose-50 text-rose-700 ring-rose-200'
       } %}
       {% set score_class = 'text-emerald-600' if result.score >= 80 else 'text-amber-500' if result.score >= 60 else 'text-rose-600' %}
-      <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-        <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+      <section class="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+        <div class="space-y-6">
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
           <p class="text-sm uppercase tracking-[0.2em] text-slate-500">AI score</p>
           <div class="mt-4 text-7xl font-semibold {{ score_class }}">{{ result.score }}<span class="text-3xl text-slate-400">/100</span></div>
           <div class="mt-6 inline-flex rounded-full px-4 py-2 text-sm font-semibold ring-1 {{ verdict_class.get(result.verdict, verdict_class['CAUTION']) }}">
@@ -65,16 +66,46 @@
             <p class="mt-2 text-base leading-7 text-slate-800">{{ result.price_insight or "No pricing insight available." }}</p>
           </div>
           <div class="mt-5 rounded-2xl bg-slate-50 p-5 ring-1 ring-slate-200">
-            <p class="text-sm font-medium text-slate-500">Decision signal</p>
-            <p class="mt-2 text-base leading-7 text-slate-800">
-              {% if result.verdict == 'BUY' %}
-              The report appears favorable, but confirm pricing and inspection details before closing.
-              {% elif result.verdict == 'AVOID' %}
-              The report shows material concerns that may outweigh the value of the vehicle.
-              {% else %}
-              The vehicle may still be viable, but review the flagged issues carefully before proceeding.
-              {% endif %}
-            </p>
+            <p class="text-sm font-medium text-slate-500">Bottom line</p>
+            <p class="mt-2 text-base leading-7 text-slate-800">{{ result.bottom_line or result.summary }}</p>
+          </div>
+          </div>
+
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <h2 class="text-2xl font-semibold text-slate-950">Top reasons</h2>
+            {% if result.top_reasons %}
+            <ul class="mt-5 space-y-3">
+              {% for reason in result.top_reasons %}
+              <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                <span class="mt-1 h-2.5 w-2.5 rounded-full bg-teal-500"></span>
+                <span>{{ reason }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-4 text-slate-600">No top reasons available.</p>
+            {% endif %}
+          </div>
+
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <h2 class="text-2xl font-semibold text-slate-950">Price guidance</h2>
+            <p class="mt-4 leading-8 text-slate-700">{{ result.price_guidance or result.fair_price_assessment or "No price guidance available." }}</p>
+          </div>
+
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <h2 class="text-2xl font-semibold text-slate-950">Who should avoid this car</h2>
+            {% if result.who_should_avoid %}
+            <ul class="mt-5 space-y-3">
+              {% for item in result.who_should_avoid %}
+              <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                <span class="mt-1 h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+                <span>{{ item }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-4 text-slate-600">No specific buyer profile guidance available.</p>
+            {% endif %}
           </div>
         </div>
 
@@ -82,6 +113,124 @@
           <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
             <h2 class="text-2xl font-semibold text-slate-950">Summary</h2>
             <p class="mt-4 leading-8 text-slate-700">{{ result.summary }}</p>
+          </div>
+
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <h2 class="text-2xl font-semibold text-slate-950">Why this matters</h2>
+            {% if result.why_it_matters %}
+            <ul class="mt-5 space-y-3">
+              {% for item in result.why_it_matters %}
+              <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                <span class="mt-1 h-2.5 w-2.5 rounded-full bg-sky-400"></span>
+                <span>{{ item }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-4 text-slate-600">No buyer impact notes available.</p>
+            {% endif %}
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Major deal breakers</h2>
+              {% if result.major_deal_breakers %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.major_deal_breakers %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No major deal breakers identified.</p>
+              {% endif %}
+            </div>
+
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Negotiation leverage</h2>
+              {% if result.negotiation_leverage %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.negotiation_leverage %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No negotiation points were identified.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Needs inspection</h2>
+              {% if result.needs_inspection %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.needs_inspection %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-indigo-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No inspection priorities available.</p>
+              {% endif %}
+            </div>
+
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Inspection checklist</h2>
+              {% if result.inspection_checklist %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.inspection_checklist %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No checklist available.</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Ask the dealer</h2>
+              {% if result.dealer_questions %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.dealer_questions %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No dealer questions available.</p>
+              {% endif %}
+            </div>
+
+            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+              <h2 class="text-2xl font-semibold text-slate-950">Mechanic focus</h2>
+              {% if result.mechanic_focus %}
+              <ul class="mt-5 space-y-3">
+                {% for item in result.mechanic_focus %}
+                <li class="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-slate-700 ring-1 ring-slate-200">
+                  <span class="mt-1 h-2.5 w-2.5 rounded-full bg-violet-400"></span>
+                  <span>{{ item }}</span>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="mt-4 text-slate-600">No mechanic priorities available.</p>
+              {% endif %}
+            </div>
           </div>
 
           <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
@@ -98,6 +247,11 @@
             {% else %}
             <p class="mt-4 text-slate-600">No notable risks were identified.</p>
             {% endif %}
+          </div>
+
+          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <h2 class="text-2xl font-semibold text-slate-950">Confidence note</h2>
+            <p class="mt-4 leading-8 text-slate-700">{{ result.confidence_note or "This analysis is based on report history and should be paired with an independent inspection." }}</p>
           </div>
         </div>
       </section>
