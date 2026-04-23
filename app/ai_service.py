@@ -31,35 +31,15 @@ def analyze_vehicle_report(report_text: str, api_key: str, model: str) -> dict[s
     client = OpenAI(api_key=api_key)
 
     try:
-        response = client.responses.create(
-            model=model,
-            input=[
-                {
-                    "role": "system",
-                    "content": [
-                        {
-                            "type": "input_text",
-                            "text": (
-                                "Return valid JSON only. Do not wrap the JSON in markdown. "
-                                "Do not add explanation before or after the JSON."
-                            ),
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": PROMPT},
-                        {"type": "input_text", "text": report_text[:120000]},
-                    ],
-                },
-            ],
-            temperature=0.2,
-        )
+        output_text = request_with_responses_api(client, model, report_text)
+    except AttributeError:
+        try:
+            output_text = request_with_chat_completions(client, model, report_text)
+        except Exception as exc:
+            raise AIProcessingError("OpenAI analysis failed.") from exc
     except Exception as exc:
         raise AIProcessingError("OpenAI analysis failed.") from exc
 
-    output_text = getattr(response, "output_text", "") or ""
     if not output_text:
         raise AIProcessingError("OpenAI returned an empty response.")
 
@@ -69,6 +49,56 @@ def analyze_vehicle_report(report_text: str, api_key: str, model: str) -> dict[s
         raise AIProcessingError("OpenAI returned invalid JSON.") from exc
 
     return normalize_analysis(result)
+
+
+def request_with_responses_api(client: OpenAI, model: str, report_text: str) -> str:
+    response = client.responses.create(
+        model=model,
+        input=[
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Return valid JSON only. Do not wrap the JSON in markdown. "
+                            "Do not add explanation before or after the JSON."
+                        ),
+                    }
+                ],
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": PROMPT},
+                    {"type": "input_text", "text": report_text[:120000]},
+                ],
+            },
+        ],
+        temperature=0.2,
+    )
+    return getattr(response, "output_text", "") or ""
+
+
+def request_with_chat_completions(client: OpenAI, model: str, report_text: str) -> str:
+    response = client.chat.completions.create(
+        model=model,
+        temperature=0.2,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Return valid JSON only. Do not wrap the JSON in markdown. "
+                    "Do not add explanation before or after the JSON."
+                ),
+            },
+            {
+                "role": "user",
+                "content": f"{PROMPT}\n\nVehicle history report text:\n{report_text[:120000]}",
+            },
+        ],
+    )
+    return (response.choices[0].message.content or "").strip()
 
 
 def normalize_analysis(result: dict[str, Any]) -> dict[str, Any]:
