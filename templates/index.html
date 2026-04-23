@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>VinAI | Used Car Report Analyzer</title>
+    <title>VinAI Test | Free Used Car Report Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -39,7 +39,7 @@
               Avoid Costly Mistakes When Buying a Used Car
             </h1>
             <p class="max-w-2xl text-lg leading-8 text-slate-600">
-              Upload your Carfax report and get an instant AI-powered decision with practical risk signals,
+              Upload your Carfax report and get a free AI-powered decision with practical risk signals,
               pricing context, and a clear recommendation before you commit.
             </p>
           </div>
@@ -69,7 +69,7 @@
             href="#analyzer"
             class="inline-flex items-center justify-center rounded-2xl bg-brand px-6 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700"
           >
-            Analyze Report ($3)
+            Open Test App
           </a>
 
           <div class="overflow-hidden rounded-[2rem] bg-white p-3 shadow-premium ring-1 ring-slate-200">
@@ -84,10 +84,10 @@
         <div id="analyzer" class="rounded-[2rem] bg-white p-7 shadow-premium ring-1 ring-slate-200">
           <div class="space-y-6">
             <div class="space-y-2">
-              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Professional report review</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Test environment</p>
               <h2 class="text-3xl font-semibold text-slate-950">Upload your vehicle history report</h2>
               <p class="text-sm leading-7 text-slate-600">
-                Your PDF stays tied to a unique report ID. Checkout is handled securely by Stripe.
+                Your PDF stays tied to a unique report ID and is analyzed immediately after upload.
               </p>
             </div>
 
@@ -97,8 +97,8 @@
                 <p class="mt-1 text-sm text-slate-600">Drag, drop, or browse a Carfax report.</p>
               </div>
               <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-                <p class="text-sm font-semibold text-slate-900">2. Pay $3</p>
-                <p class="mt-1 text-sm text-slate-600">Use Stripe Checkout with secure payment flow.</p>
+                <p class="text-sm font-semibold text-slate-900">2. Start analysis</p>
+                <p class="mt-1 text-sm text-slate-600">We begin processing right after upload.</p>
               </div>
               <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <p class="text-sm font-semibold text-slate-900">3. Review verdict</p>
@@ -127,14 +127,14 @@
                 class="w-full rounded-2xl bg-brand px-5 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                 disabled
               >
-                Analyze Report ($3)
+                Analyze Report Free
               </button>
             </form>
 
             <p id="status-message" class="hidden rounded-2xl px-4 py-3 text-sm font-medium"></p>
 
             <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
-              <span>Encrypted payment via Stripe</span>
+              <span>Free launch access</span>
               <span>PDF-only upload validation</span>
               <span>No affiliation with Carfax</span>
             </div>
@@ -200,6 +200,7 @@
         const [file] = event.dataTransfer.files;
         if (file && file.type === "application/pdf") {
           updateSelectedFile(file);
+          setStatus("PDF selected. Ready to analyze.");
         } else {
           setStatus("Please upload a valid PDF file.", true);
         }
@@ -209,6 +210,7 @@
         const [file] = event.target.files;
         if (file && file.type === "application/pdf") {
           updateSelectedFile(file);
+          setStatus("PDF selected. Ready to analyze.");
         } else {
           updateSelectedFile(null);
           setStatus("Please upload a valid PDF file.", true);
@@ -229,7 +231,7 @@
           const uploadData = new FormData();
           uploadData.append("file", selectedFile);
 
-          const uploadResponse = await fetch("/upload", {
+          const uploadResponse = await fetch("/test/upload", {
             method: "POST",
             body: uploadData,
           });
@@ -239,20 +241,20 @@
             throw new Error(uploadResult.error || "Upload failed.");
           }
 
-          setStatus("Creating secure checkout...");
-          const checkoutResponse = await fetch("/create-checkout-session", {
+          setStatus("Analyzing report...");
+          const analysisResponse = await fetch("/test/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ file_id: uploadResult.file_id }),
           });
 
-          const checkoutResult = await checkoutResponse.json();
-          if (!checkoutResponse.ok) {
-            throw new Error(checkoutResult.error || "Checkout creation failed.");
+          const analysisResult = await analysisResponse.json();
+          if (!analysisResponse.ok) {
+            throw new Error(analysisResult.error || "Analysis failed.");
           }
 
-          setStatus("Redirecting to secure checkout...");
-          window.location.href = checkoutResult.checkout_url;
+          setStatus("Redirecting to results...");
+          window.location.href = analysisResult.result_url;
         } catch (error) {
           setStatus(error.message || "Something went wrong. Please try again.", true);
           submitButton.disabled = false;
