@@ -265,17 +265,24 @@
               </div>
             </div>
 
-            <div id="chat-history" class="mt-6 space-y-4">
+            <div id="chat-history" class="mt-6 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200">
+              <div class="space-y-4" id="chat-thread">
               {% for item in result.chat_history|default([]) %}
               <div class="space-y-3">
-                <div class="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white">
+                <div class="ml-auto max-w-[85%] rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white">
                   {{ item.question }}
                 </div>
-                <div class="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700 ring-1 ring-slate-200">
+                <div class="max-w-[90%] rounded-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-700 ring-1 ring-slate-200 whitespace-pre-line">
                   {{ item.answer }}
                 </div>
               </div>
               {% endfor %}
+              {% if not result.chat_history|default([]) %}
+              <div class="rounded-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-500 ring-1 ring-slate-200">
+                Ask practical follow-up questions like whether this is safe for daily driving, what to ask the dealer, or what a mechanic should inspect first.
+              </div>
+              {% endif %}
+              </div>
             </div>
 
             <form id="chat-form" class="mt-6 space-y-4">
@@ -309,7 +316,7 @@
       const chatQuestion = document.getElementById("chat-question");
       const chatSubmit = document.getElementById("chat-submit");
       const chatStatus = document.getElementById("chat-status");
-      const chatHistory = document.getElementById("chat-history");
+      const chatThread = document.getElementById("chat-thread");
       const chatRemaining = document.getElementById("chat-remaining");
 
       if (chatForm) {
@@ -337,15 +344,18 @@
               throw new Error(result.error || "Unable to answer the question.");
             }
 
+            const emptyHint = chatThread.querySelector(".text-slate-500");
+            if (emptyHint) emptyHint.remove();
+
             const wrapper = document.createElement("div");
             wrapper.className = "space-y-3";
             wrapper.innerHTML = `
-              <div class="rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white"></div>
-              <div class="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-7 text-slate-700 ring-1 ring-slate-200"></div>
+              <div class="ml-auto max-w-[85%] rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white"></div>
+              <div class="max-w-[90%] rounded-2xl bg-white px-4 py-4 text-sm leading-7 text-slate-700 ring-1 ring-slate-200 whitespace-pre-line"></div>
             `;
             wrapper.children[0].textContent = question;
             wrapper.children[1].textContent = result.answer;
-            chatHistory.appendChild(wrapper);
+            chatThread.appendChild(wrapper);
 
             chatQuestion.value = "";
             chatRemaining.textContent = String(result.remaining);

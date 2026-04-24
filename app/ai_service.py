@@ -86,6 +86,10 @@ def answer_follow_up_question(
 Answer the buyer's question in a concise, practical, decision-oriented way.
 Use the report and prior analysis below. Do not invent facts that are not supported.
 If the answer depends on an inspection or price comparison, say so clearly.
+Return plain conversational text only.
+Do not return JSON.
+Do not use braces, keys, labels, or code formatting.
+If a short bullet list helps, use normal markdown bullets.
 
 Analysis summary JSON:
 {json.dumps(analysis, indent=2)}
@@ -127,6 +131,15 @@ def request_with_responses_api_text(
     text: str,
     structured: bool = False,
 ) -> str:
+    system_text = (
+        "Return valid JSON only. Do not wrap the JSON in markdown. "
+        "Do not add explanation before or after the JSON."
+        if structured
+        else (
+            "Return plain conversational text only. Do not return JSON. "
+            "Do not use braces, keys, labels, or code formatting."
+        )
+    )
     response = client.responses.create(
         model=model,
         input=[
@@ -135,10 +148,7 @@ def request_with_responses_api_text(
                 "content": [
                     {
                         "type": "input_text",
-                        "text": (
-                            "Return valid JSON only. Do not wrap the JSON in markdown. "
-                            "Do not add explanation before or after the JSON."
-                        ),
+                        "text": system_text,
                     }
                 ],
             },
@@ -186,7 +196,7 @@ def request_with_chat_completions_text(
             },
         ],
     )
-    return (response.choices[0].message.content or "").strip()
+    return clean_follow_up_text((response.choices[0].message.content or "").strip())
 
 
 def normalize_analysis(result: dict[str, Any]) -> dict[str, Any]:
@@ -246,3 +256,43 @@ def normalize_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         value = [str(value)] if value else []
     return [str(item).strip() for item in value if str(item).strip()]
+
+
+def clean_follow_up_text(text: str) -> str:
+    text = text.strip()
+    if not text:
+        return text
+
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return text
+
+    if isinstance(parsed, dict):
+        preferred_keys = [
+            "answer",
+            "response",
+            "recommendation",
+            "summary",
+            "final_recommendation",
+        ]
+        for key in preferred_keys:
+            value = parsed.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+        lines: list[str] = []
+        for key, value in parsed.items():
+            if isinstance(value, str) and value.strip():
+                lines.append(value.strip())
+            elif isinstance(value, list):
+                items = [str(item).strip() for item in value if str(item).strip()]
+                if items:
+                    lines.append("\n".join(f"- {item}" for item in items))
+        return "\n\n".join(lines).strip() or text
+
+    if isinstance(parsed, list):
+        items = [str(item).strip() for item in parsed if str(item).strip()]
+        return "\n".join(f"- {item}" for item in items) if items else text
+
+    return text
