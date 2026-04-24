@@ -4,6 +4,7 @@ import json
 import os
 import uuid
 from pathlib import Path
+from time import time
 
 from flask import Blueprint, current_app, jsonify, render_template, request, url_for
 from werkzeug.utils import secure_filename
@@ -15,6 +16,8 @@ main_bp = Blueprint("main", __name__)
 
 ALLOWED_EXTENSIONS = {"pdf"}
 MAX_CHAT_TURNS = 3
+RETENTION_HOURS = 24
+RETENTION_SECONDS = RETENTION_HOURS * 60 * 60
 
 
 def allowed_file(filename: str) -> bool:
@@ -23,6 +26,54 @@ def allowed_file(filename: str) -> bool:
 
 def uploads_path_for(file_id: str, extension: str) -> str:
     return os.path.join(current_app.config["UPLOAD_FOLDER"], f"{file_id}.{extension}")
+
+
+def report_timestamp(file_id: str) -> float | None:
+    pdf_path = uploads_path_for(file_id, "pdf")
+    json_path = uploads_path_for(file_id, "json")
+
+    if os.path.exists(pdf_path):
+        return os.path.getmtime(pdf_path)
+    if os.path.exists(json_path):
+        return os.path.getmtime(json_path)
+    return None
+
+
+def remove_report_files(file_id: str) -> None:
+    for extension in ("pdf", "json"):
+        path = uploads_path_for(file_id, extension)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
+
+def cleanup_expired_reports() -> None:
+    cutoff = time() - RETENTION_SECONDS
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    file_ids: set[str] = set()
+
+    for filename in os.listdir(upload_dir):
+        path = os.path.join(upload_dir, filename)
+        if not os.path.isfile(path):
+            continue
+        file_id, extension = os.path.splitext(filename)
+        if extension.lower() not in {".pdf", ".json"}:
+            continue
+        file_ids.add(file_id)
+
+    for file_id in file_ids:
+        timestamp = report_timestamp(file_id)
+        if timestamp is not None and timestamp < cutoff:
+            remove_report_files(file_id)
+
+
+def is_report_expired(file_id: str) -> bool:
+    timestamp = report_timestamp(file_id)
+    if timestamp is None:
+        return True
+    return timestamp < (time() - RETENTION_SECONDS)
 
 
 def process_file(file_id: str) -> None:
@@ -71,11 +122,13 @@ def process_file(file_id: str) -> None:
 
 @main_bp.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    cleanup_expired_reports()
+    return render_template("index.html", retention_hours=RETENTION_HOURS)
 
 
 @main_bp.route("/upload", methods=["POST"])
 def upload_file():
+    cleanup_expired_reports()
     uploaded_file = request.files.get("file")
     if not uploaded_file:
         return jsonify({"error": "Please upload a PDF file."}), 400
@@ -97,6 +150,7 @@ def upload_file():
 
 @main_bp.route("/analyze", methods=["POST"])
 def analyze_file():
+    cleanup_expired_reports()
     payload = request.get_json(silent=True) or {}
     file_id = str(payload.get("file_id", "")).strip()
 
@@ -113,22 +167,51 @@ def analyze_file():
 
 @main_bp.route("/result/<file_id>", methods=["GET"])
 def result(file_id: str):
+    cleanup_expired_reports()
+    if is_report_expired(file_id):
+        return render_template(
+            "result.html",
+            file_id=file_id,
+            processing=False,
+            result=None,
+            expired=True,
+            retention_hours=RETENTION_HOURS,
+        )
+
     json_path = uploads_path_for(file_id, "json")
     if not os.path.exists(json_path):
-        return render_template("result.html", file_id=file_id, processing=True, result=None)
+        return render_template(
+            "result.html",
+            file_id=file_id,
+            processing=True,
+            result=None,
+            expired=False,
+            retention_hours=RETENTION_HOURS,
+        )
 
     with open(json_path, "r", encoding="utf-8") as file:
         result_data = json.load(file)
 
-    return render_template("result.html", file_id=file_id, processing=False, result=result_data)
+    return render_template(
+        "result.html",
+        file_id=file_id,
+        processing=False,
+        result=result_data,
+        expired=False,
+        retention_hours=RETENTION_HOURS,
+    )
 
 
 @main_bp.route("/chat/<file_id>", methods=["POST"])
 def chat(file_id: str):
+    cleanup_expired_reports()
     payload = request.get_json(silent=True) or {}
     question = str(payload.get("question", "")).strip()
     if not question:
         return jsonify({"error": "Please enter a question."}), 400
+
+    if is_report_expired(file_id):
+        return jsonify({"error": "This analysis expired after 24 hours. Please upload the report again."}), 410
 
     json_path = uploads_path_for(file_id, "json")
     pdf_path = uploads_path_for(file_id, "pdf")
