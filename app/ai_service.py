@@ -58,7 +58,7 @@ def analyze_vehicle_report(report_text: str, api_key: str, model: str) -> dict[s
         raise AIProcessingError("OpenAI returned an empty response.")
 
     try:
-        result = json.loads(output_text)
+        result = parse_json_response(output_text)
     except json.JSONDecodeError as exc:
         raise AIProcessingError("OpenAI returned invalid JSON.") from exc
 
@@ -175,15 +175,20 @@ def request_with_chat_completions_text(
     text: str,
     structured: bool = False,
 ) -> str:
-    response = client.chat.completions.create(
-        model=model,
-        temperature=0.2,
-        messages=[
+    kwargs: dict[str, Any] = {
+        "model": model,
+        "temperature": 0.2,
+        "messages": [
             {
                 "role": "system",
                 "content": (
                     "Return valid JSON only. Do not wrap the JSON in markdown. "
                     "Do not add explanation before or after the JSON."
+                    if structured
+                    else (
+                        "Return plain conversational text only. Do not return JSON. "
+                        "Do not use braces, keys, labels, or code formatting."
+                    )
                 ),
             },
             {
@@ -195,8 +200,13 @@ def request_with_chat_completions_text(
                 ),
             },
         ],
-    )
-    return clean_follow_up_text((response.choices[0].message.content or "").strip())
+    }
+    if structured:
+        kwargs["response_format"] = {"type": "json_object"}
+
+    response = client.chat.completions.create(**kwargs)
+    content = (response.choices[0].message.content or "").strip()
+    return content if structured else clean_follow_up_text(content)
 
 
 def normalize_analysis(result: dict[str, Any]) -> dict[str, Any]:
@@ -296,3 +306,31 @@ def clean_follow_up_text(text: str) -> str:
         return "\n".join(f"- {item}" for item in items) if items else text
 
     return text
+
+
+def parse_json_response(text: str) -> dict[str, Any]:
+    text = text.strip()
+    if not text:
+        raise json.JSONDecodeError("Empty response", text, 0)
+
+    candidates = [text]
+
+    if text.startswith("```"):
+        stripped = text.strip("`")
+        if "\n" in stripped:
+            candidates.append(stripped.split("\n", 1)[1].strip())
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(text[start : end + 1])
+
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+
+    raise json.JSONDecodeError("Invalid JSON", text, 0)
