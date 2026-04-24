@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 
 from app.ai_service import AIProcessingError, analyze_vehicle_report, answer_follow_up_question
 from app.pdf_service import PDFExtractionError, extract_pdf_text
+from app.report_import_service import ReportImportError, import_report_from_url
 
 main_bp = Blueprint("main", __name__)
 
@@ -30,17 +31,20 @@ def uploads_path_for(file_id: str, extension: str) -> str:
 
 def report_timestamp(file_id: str) -> float | None:
     pdf_path = uploads_path_for(file_id, "pdf")
+    txt_path = uploads_path_for(file_id, "txt")
     json_path = uploads_path_for(file_id, "json")
 
     if os.path.exists(pdf_path):
         return os.path.getmtime(pdf_path)
+    if os.path.exists(txt_path):
+        return os.path.getmtime(txt_path)
     if os.path.exists(json_path):
         return os.path.getmtime(json_path)
     return None
 
 
 def remove_report_files(file_id: str) -> None:
-    for extension in ("pdf", "json"):
+    for extension in ("pdf", "txt", "json"):
         path = uploads_path_for(file_id, extension)
         if os.path.exists(path):
             try:
@@ -59,7 +63,7 @@ def cleanup_expired_reports() -> None:
         if not os.path.isfile(path):
             continue
         file_id, extension = os.path.splitext(filename)
-        if extension.lower() not in {".pdf", ".json"}:
+        if extension.lower() not in {".pdf", ".txt", ".json"}:
             continue
         file_ids.add(file_id)
 
@@ -77,7 +81,6 @@ def is_report_expired(file_id: str) -> bool:
 
 
 def process_file(file_id: str) -> None:
-    pdf_path = uploads_path_for(file_id, "pdf")
     json_path = uploads_path_for(file_id, "json")
 
     analysis = {
@@ -104,7 +107,7 @@ def process_file(file_id: str) -> None:
     }
 
     try:
-        report_text = extract_pdf_text(pdf_path)
+        report_text = extract_report_text_for_file(file_id)
         result = analyze_vehicle_report(
             report_text=report_text,
             api_key=current_app.config["OPENAI_API_KEY"],
@@ -148,6 +151,58 @@ def upload_file():
     return jsonify({"file_id": file_id})
 
 
+def report_source_path(file_id: str) -> str | None:
+    for extension in ("pdf", "txt"):
+        path = uploads_path_for(file_id, extension)
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def extract_report_text_for_file(file_id: str) -> str:
+    source_path = report_source_path(file_id)
+    if source_path is None:
+        raise PDFExtractionError("Uploaded file was not found.")
+
+    if source_path.endswith(".pdf"):
+        return extract_pdf_text(source_path)
+
+    with open(source_path, "r", encoding="utf-8") as file:
+        extracted_text = file.read().strip()
+
+    if not extracted_text:
+        raise PDFExtractionError("The imported report page did not contain readable text.")
+
+    return extracted_text
+
+
+@main_bp.route("/import-link", methods=["POST"])
+def import_link():
+    cleanup_expired_reports()
+    payload = request.get_json(silent=True) or {}
+    report_url = str(payload.get("report_url", "")).strip()
+
+    if not report_url:
+        return jsonify({"error": "Please paste a report link."}), 400
+
+    file_id = str(uuid.uuid4())
+    destination_base_path = os.path.join(current_app.config["UPLOAD_FOLDER"], file_id)
+
+    try:
+        imported_path = import_report_from_url(report_url, destination_base_path)
+    except ReportImportError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception:
+        return jsonify({"error": "Unable to import that link right now."}), 500
+
+    return jsonify(
+        {
+            "file_id": file_id,
+            "source_type": Path(imported_path).suffix.lstrip("."),
+        }
+    )
+
+
 @main_bp.route("/analyze", methods=["POST"])
 def analyze_file():
     cleanup_expired_reports()
@@ -157,8 +212,8 @@ def analyze_file():
     if not file_id:
         return jsonify({"error": "Missing file_id."}), 400
 
-    pdf_path = Path(uploads_path_for(file_id, "pdf"))
-    if not pdf_path.exists():
+    source_path = report_source_path(file_id)
+    if source_path is None:
         return jsonify({"error": "Uploaded file not found."}), 404
 
     process_file(file_id)
@@ -214,8 +269,8 @@ def chat(file_id: str):
         return jsonify({"error": "This analysis expired after 24 hours. Please upload the report again."}), 410
 
     json_path = uploads_path_for(file_id, "json")
-    pdf_path = uploads_path_for(file_id, "pdf")
-    if not os.path.exists(json_path) or not os.path.exists(pdf_path):
+    source_path = report_source_path(file_id)
+    if not os.path.exists(json_path) or source_path is None:
         return jsonify({"error": "Report not found."}), 404
 
     with open(json_path, "r", encoding="utf-8") as file:
@@ -226,7 +281,7 @@ def chat(file_id: str):
         return jsonify({"error": "Follow-up limit reached.", "remaining": 0}), 400
 
     try:
-        report_text = extract_pdf_text(pdf_path)
+        report_text = extract_report_text_for_file(file_id)
         answer = answer_follow_up_question(
             report_text=report_text,
             analysis=result_data,

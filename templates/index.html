@@ -124,6 +124,28 @@
                 <p class="mt-2 text-sm text-slate-500">or click to browse. PDF only. Max 20MB.</p>
               </label>
 
+              <div class="relative py-1">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center">
+                  <span class="bg-white px-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Or paste a report link</span>
+                </div>
+              </div>
+
+              <div class="space-y-3 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200">
+                <label for="report-url" class="block text-sm font-semibold text-slate-900">Report link</label>
+                <input
+                  id="report-url"
+                  type="url"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  placeholder="Paste a direct PDF link or a supported report page link"
+                />
+                <p class="text-xs leading-6 text-slate-500">
+                  Best support: direct PDF links, `vinfax.co/reports/pdf/...`, `vinfax.co/reports/view/...`, and some report pages we can extract text from.
+                </p>
+              </div>
+
               <button
                 id="submit-button"
                 type="submit"
@@ -155,6 +177,7 @@
       const dropZone = document.getElementById("drop-zone");
       const fileInput = document.getElementById("file-input");
       const fileName = document.getElementById("file-name");
+      const reportUrl = document.getElementById("report-url");
       const uploadForm = document.getElementById("upload-form");
       const submitButton = document.getElementById("submit-button");
       const statusMessage = document.getElementById("status-message");
@@ -183,7 +206,11 @@
       function updateSelectedFile(file) {
         selectedFile = file;
         fileName.textContent = file ? file.name : "Drag and drop your PDF here";
-        submitButton.disabled = !file;
+        updateSubmitState();
+      }
+
+      function updateSubmitState() {
+        submitButton.disabled = !selectedFile && !reportUrl.value.trim();
       }
 
       ["dragenter", "dragover"].forEach((eventName) => {
@@ -221,35 +248,59 @@
         }
       });
 
+      reportUrl.addEventListener("input", () => {
+        updateSubmitState();
+      });
+
       uploadForm.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (!selectedFile) {
-          setStatus("Select a PDF file before continuing.", true);
+        const pastedUrl = reportUrl.value.trim();
+
+        if (!selectedFile && !pastedUrl) {
+          setStatus("Select a PDF or paste a supported report link before continuing.", true);
           return;
         }
 
         submitButton.disabled = true;
-        setStatus("Uploading report...");
 
         try {
-          const uploadData = new FormData();
-          uploadData.append("file", selectedFile);
+          let fileId = "";
 
-          const uploadResponse = await fetch("/upload", {
-            method: "POST",
-            body: uploadData,
-          });
+          if (selectedFile) {
+            setStatus("Uploading report...");
+            const uploadData = new FormData();
+            uploadData.append("file", selectedFile);
 
-          const uploadResult = await uploadResponse.json();
-          if (!uploadResponse.ok) {
-            throw new Error(uploadResult.error || "Upload failed.");
+            const uploadResponse = await fetch("/upload", {
+              method: "POST",
+              body: uploadData,
+            });
+
+            const uploadResult = await uploadResponse.json();
+            if (!uploadResponse.ok) {
+              throw new Error(uploadResult.error || "Upload failed.");
+            }
+            fileId = uploadResult.file_id;
+          } else {
+            setStatus("Importing report link...");
+            const importResponse = await fetch("/import-link", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ report_url: pastedUrl }),
+            });
+
+            const importResult = await importResponse.json();
+            if (!importResponse.ok) {
+              throw new Error(importResult.error || "Unable to import that link.");
+            }
+            fileId = importResult.file_id;
           }
 
           setStatus("Analyzing report...");
           const analysisResponse = await fetch("/analyze", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ file_id: uploadResult.file_id }),
+            body: JSON.stringify({ file_id: fileId }),
           });
 
           const analysisResult = await analysisResponse.json();
@@ -261,7 +312,7 @@
           window.location.href = analysisResult.result_url;
         } catch (error) {
           setStatus(error.message || "Something went wrong. Please try again.", true);
-          submitButton.disabled = false;
+          updateSubmitState();
         }
       });
     </script>
