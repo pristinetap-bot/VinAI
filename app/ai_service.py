@@ -65,7 +65,68 @@ def analyze_vehicle_report(report_text: str, api_key: str, model: str) -> dict[s
     return normalize_analysis(result)
 
 
+def answer_follow_up_question(
+    report_text: str,
+    analysis: dict[str, Any],
+    question: str,
+    history: list[dict[str, str]],
+    api_key: str,
+    model: str,
+) -> str:
+    if not api_key:
+        raise AIProcessingError("OPENAI_API_KEY is not configured.")
+
+    client = OpenAI(api_key=api_key)
+    history_lines = []
+    for item in history[-3:]:
+        history_lines.append(f"Buyer: {item.get('question', '')}")
+        history_lines.append(f"Assistant: {item.get('answer', '')}")
+
+    prompt = f"""You are helping a buyer understand a vehicle history report.
+Answer the buyer's question in a concise, practical, decision-oriented way.
+Use the report and prior analysis below. Do not invent facts that are not supported.
+If the answer depends on an inspection or price comparison, say so clearly.
+
+Analysis summary JSON:
+{json.dumps(analysis, indent=2)}
+
+Prior chat:
+{chr(10).join(history_lines) if history_lines else "No prior chat."}
+
+Vehicle history report text:
+{report_text[:120000]}
+
+Buyer question:
+{question}
+"""
+
+    try:
+        output_text = request_with_responses_api_text(client, model, prompt)
+    except AttributeError:
+        try:
+            output_text = request_with_chat_completions_text(client, model, prompt)
+        except Exception as exc:
+            raise AIProcessingError("OpenAI follow-up failed.") from exc
+    except Exception as exc:
+        raise AIProcessingError("OpenAI follow-up failed.") from exc
+
+    output_text = output_text.strip()
+    if not output_text:
+        raise AIProcessingError("OpenAI returned an empty follow-up response.")
+
+    return output_text
+
+
 def request_with_responses_api(client: OpenAI, model: str, report_text: str) -> str:
+    return request_with_responses_api_text(client, model, report_text, structured=True)
+
+
+def request_with_responses_api_text(
+    client: OpenAI,
+    model: str,
+    text: str,
+    structured: bool = False,
+) -> str:
     response = client.responses.create(
         model=model,
         input=[
@@ -84,8 +145,8 @@ def request_with_responses_api(client: OpenAI, model: str, report_text: str) -> 
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": PROMPT},
-                    {"type": "input_text", "text": report_text[:120000]},
+                    {"type": "input_text", "text": PROMPT if structured else text},
+                    {"type": "input_text", "text": text[:120000] if structured else ""},
                 ],
             },
         ],
@@ -95,6 +156,15 @@ def request_with_responses_api(client: OpenAI, model: str, report_text: str) -> 
 
 
 def request_with_chat_completions(client: OpenAI, model: str, report_text: str) -> str:
+    return request_with_chat_completions_text(client, model, report_text, structured=True)
+
+
+def request_with_chat_completions_text(
+    client: OpenAI,
+    model: str,
+    text: str,
+    structured: bool = False,
+) -> str:
     response = client.chat.completions.create(
         model=model,
         temperature=0.2,
@@ -108,7 +178,11 @@ def request_with_chat_completions(client: OpenAI, model: str, report_text: str) 
             },
             {
                 "role": "user",
-                "content": f"{PROMPT}\n\nVehicle history report text:\n{report_text[:120000]}",
+                "content": (
+                    f"{PROMPT}\n\nVehicle history report text:\n{text[:120000]}"
+                    if structured
+                    else text[:120000]
+                ),
             },
         ],
     )

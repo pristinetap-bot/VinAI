@@ -5,15 +5,16 @@ import os
 import uuid
 from pathlib import Path
 
-from flask import Blueprint, current_app, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, jsonify, render_template, request, url_for
 from werkzeug.utils import secure_filename
 
-from app.ai_service import AIProcessingError, analyze_vehicle_report
+from app.ai_service import AIProcessingError, analyze_vehicle_report, answer_follow_up_question
 from app.pdf_service import PDFExtractionError, extract_pdf_text
 
 main_bp = Blueprint("main", __name__)
 
 ALLOWED_EXTENSIONS = {"pdf"}
+MAX_CHAT_TURNS = 3
 
 
 def allowed_file(filename: str) -> bool:
@@ -48,6 +49,7 @@ def process_file(file_id: str) -> None:
         "who_should_avoid": [],
         "dealer_questions": [],
         "mechanic_focus": [],
+        "chat_history": [],
     }
 
     try:
@@ -69,20 +71,10 @@ def process_file(file_id: str) -> None:
 
 @main_bp.route("/", methods=["GET"])
 def index():
-    return render_template("coming_soon.html")
-
-
-@main_bp.route("/test", methods=["GET"])
-def test_index():
     return render_template("index.html")
 
 
 @main_bp.route("/upload", methods=["POST"])
-def legacy_upload_redirect():
-    return redirect(url_for("main.test_index"), code=302)
-
-
-@main_bp.route("/test/upload", methods=["POST"])
 def upload_file():
     uploaded_file = request.files.get("file")
     if not uploaded_file:
@@ -104,11 +96,6 @@ def upload_file():
 
 
 @main_bp.route("/analyze", methods=["POST"])
-def legacy_analyze_redirect():
-    return redirect(url_for("main.test_index"), code=302)
-
-
-@main_bp.route("/test/analyze", methods=["POST"])
 def analyze_file():
     payload = request.get_json(silent=True) or {}
     file_id = str(payload.get("file_id", "")).strip()
@@ -125,11 +112,6 @@ def analyze_file():
 
 
 @main_bp.route("/result/<file_id>", methods=["GET"])
-def legacy_result_redirect(file_id: str):
-    return redirect(url_for("main.result", file_id=file_id), code=302)
-
-
-@main_bp.route("/test/result/<file_id>", methods=["GET"])
 def result(file_id: str):
     json_path = uploads_path_for(file_id, "json")
     if not os.path.exists(json_path):
@@ -139,6 +121,49 @@ def result(file_id: str):
         result_data = json.load(file)
 
     return render_template("result.html", file_id=file_id, processing=False, result=result_data)
+
+
+@main_bp.route("/chat/<file_id>", methods=["POST"])
+def chat(file_id: str):
+    payload = request.get_json(silent=True) or {}
+    question = str(payload.get("question", "")).strip()
+    if not question:
+        return jsonify({"error": "Please enter a question."}), 400
+
+    json_path = uploads_path_for(file_id, "json")
+    pdf_path = uploads_path_for(file_id, "pdf")
+    if not os.path.exists(json_path) or not os.path.exists(pdf_path):
+        return jsonify({"error": "Report not found."}), 404
+
+    with open(json_path, "r", encoding="utf-8") as file:
+        result_data = json.load(file)
+
+    chat_history = result_data.get("chat_history", [])
+    if len(chat_history) >= MAX_CHAT_TURNS:
+        return jsonify({"error": "Follow-up limit reached.", "remaining": 0}), 400
+
+    try:
+        report_text = extract_pdf_text(pdf_path)
+        answer = answer_follow_up_question(
+            report_text=report_text,
+            analysis=result_data,
+            question=question,
+            history=chat_history,
+            api_key=current_app.config["OPENAI_API_KEY"],
+            model=current_app.config["OPENAI_MODEL"],
+        )
+    except (PDFExtractionError, AIProcessingError) as exc:
+        return jsonify({"error": str(exc)}), 500
+    except Exception:
+        return jsonify({"error": "Unable to answer the follow-up question."}), 500
+
+    chat_history.append({"question": question, "answer": answer})
+    result_data["chat_history"] = chat_history
+
+    with open(json_path, "w", encoding="utf-8") as file:
+        json.dump(result_data, file, indent=2)
+
+    return jsonify({"answer": answer, "remaining": MAX_CHAT_TURNS - len(chat_history)})
 
 
 @main_bp.route("/health", methods=["GET"])
