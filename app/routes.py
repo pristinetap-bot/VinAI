@@ -169,6 +169,16 @@ def index():
     )
 
 
+@main_bp.route("/test", methods=["GET"])
+def test_index():
+    cleanup_expired_reports()
+    return render_template(
+        "test.html",
+        retention_hours=RETENTION_HOURS,
+        usage_count=usage_count(),
+    )
+
+
 @main_bp.route("/upload", methods=["POST"])
 def upload_file():
     cleanup_expired_reports()

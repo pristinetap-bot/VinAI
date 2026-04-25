@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VinAI Test | Premium Used Car Report Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              ink: "#0f172a",
+              mist: "#f8fafc",
+              steel: "#334155",
+              brand: "#0f766e",
+              accent: "#f59e0b",
+            },
+            boxShadow: {
+              premium: "0 25px 80px rgba(15, 23, 42, 0.14)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-mist text-ink">
+    <div class="absolute inset-x-0 top-0 -z-10 h-[44rem] bg-gradient-to-b from-cyan-50 via-white to-transparent"></div>
+    <div class="absolute right-0 top-0 -z-10 h-[30rem] w-[30rem] rounded-full bg-teal-200/30 blur-3xl"></div>
+    <div class="absolute left-[-8rem] top-[14rem] -z-10 h-[22rem] w-[22rem] rounded-full bg-sky-100/60 blur-3xl"></div>
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14">
+      <section class="grid items-start gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
+        <div class="order-2 space-y-7 lg:order-1 lg:space-y-8">
+          <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/90 px-4 py-2 text-sm font-medium text-teal-800 shadow-sm backdrop-blur">
+            <span class="h-2 w-2 rounded-full bg-teal-500"></span>
+            Trusted AI analysis for used car buyers
+          </div>
+
+          <div class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+            <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-teal-600 px-2 text-white">{{ usage_count }}+</span>
+            Trusted by car buyers
+          </div>
+
+          <div class="space-y-5">
+            <h1 class="max-w-3xl text-4xl font-semibold leading-[0.95] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              Avoid Costly Mistakes When Buying a Used Car
+            </h1>
+            <p class="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+              Upload your Carfax report and get a free AI-powered decision with practical risk signals,
+              pricing context, and a clear recommendation before you commit.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3 text-sm">
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 11c0 1.657-1.343 3-3 3S6 12.657 6 11s1.343-3 3-3 3 1.343 3 3zm6 7H6a2 2 0 01-2-2v-1a5 5 0 0110 0v1a2 2 0 002 2h2zm-2-9a3 3 0 100-6 3 3 0 000 6z" />
+              </svg>
+              Secure upload
+            </div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Instant analysis
+            </div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m6 2c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.025-3.077A7.948 7.948 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Trusted by car buyers
+            </div>
+          </div>
+
+          <a
+            href="#analyzer"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-brand px-6 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
+          >
+            Analyze Report Free
+          </a>
+
+          <div class="relative overflow-hidden rounded-[2rem] bg-slate-950 p-3 shadow-premium ring-1 ring-slate-200">
+            <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cyan-400/20 to-transparent"></div>
+            <img
+              src="{{ url_for('static', filename='images/hero-futuristic-car-ai.png') }}"
+              alt="Futuristic AI-assisted used car analysis visual"
+              class="h-[260px] w-full rounded-[1.4rem] object-cover sm:h-[320px] lg:h-[360px]"
+            />
+            <div class="absolute left-7 top-7 rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white shadow-2xl backdrop-blur">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-200">AI confidence layer</p>
+              <p class="mt-2 text-lg font-semibold">Safer used-car decisions</p>
+              <p class="mt-1 text-sm text-slate-300">Risk signals, pricing context, buyer guidance.</p>
+            </div>
+            <div class="absolute bottom-7 right-7 rounded-2xl border border-cyan-400/20 bg-white/95 px-4 py-3 text-slate-900 shadow-xl">
+              <p class="text-[10px] font-semibold uppercase tracking-[0.24em] text-teal-700">Live review</p>
+              <div class="mt-2 flex items-end gap-3">
+                <div>
+                  <p class="text-3xl font-semibold text-slate-950">84</p>
+                  <p class="text-xs text-slate-500">Sample score</p>
+                </div>
+                <div class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">BUY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="analyzer" class="order-1 rounded-[2rem] bg-white p-5 shadow-premium ring-1 ring-slate-200 sm:p-6 lg:order-2 lg:p-7">
+          <div class="space-y-6">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Professional report review</p>
+              <h2 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Upload your vehicle history report</h2>
+              <p class="text-sm leading-7 text-slate-600">
+                Your PDF stays tied to a unique report ID and is analyzed immediately after upload.
+              </p>
+              <div class="rounded-2xl bg-teal-50 px-4 py-4 text-sm leading-7 text-teal-900 ring-1 ring-teal-200">
+                If you do not have a report yet, buy one from
+                <a href="https://clearvinreport.org/" target="_blank" rel="noopener noreferrer" class="font-semibold text-teal-800 underline decoration-teal-300 underline-offset-4 hover:text-teal-900">
+                  clearvinreport.org
+                </a>.
+                After purchase, copy the report link from your email or upload the PDF here to analyze it.
+              </div>
+              <div class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
+                Uploaded reports, analysis results, and follow-up chat history are automatically deleted after {{ retention_hours }} hours.
+              </div>
+            </div>
+
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p class="text-sm font-semibold text-slate-900">1. Upload PDF</p>
+                <p class="mt-1 text-sm text-slate-600">Drag, drop, or browse a Carfax report.</p>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p class="text-sm font-semibold text-slate-900">2. Start analysis</p>
+                <p class="mt-1 text-sm text-slate-600">We begin processing right after upload.</p>
+              </div>
+              <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p class="text-sm font-semibold text-slate-900">3. Review verdict</p>
+                <p class="mt-1 text-sm text-slate-600">Get score, risks, and buyer-focused advice.</p>
+              </div>
+            </div>
+
+            <form id="upload-form" class="space-y-5">
+              <label
+                id="drop-zone"
+                class="group flex cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center transition duration-200 hover:border-teal-500 hover:bg-teal-50 sm:px-6 sm:py-12"
+              >
+                <input id="file-input" type="file" accept="application/pdf" class="hidden" />
+                <div class="rounded-full bg-white p-4 shadow-sm ring-1 ring-slate-200 transition group-hover:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 11v7m0 0l-3-3m3 3l3-3" />
+                  </svg>
+                </div>
+                <p id="file-name" class="mt-5 text-base font-semibold text-slate-900">Drag and drop your PDF here</p>
+                <p class="mt-2 text-sm text-slate-500">or click to browse. PDF only. Max 20MB.</p>
+              </label>
+
+              <div class="relative py-1">
+                <div class="absolute inset-0 flex items-center">
+                  <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center">
+                  <span class="bg-white px-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Or paste a report link</span>
+                </div>
+              </div>
+
+              <div class="space-y-3 rounded-[1.5rem] bg-slate-50 p-4 ring-1 ring-slate-200">
+                <label for="report-url" class="block text-sm font-semibold text-slate-900">Report link</label>
+                <input
+                  id="report-url"
+                  type="url"
+                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+                  placeholder="Paste a direct PDF link or a supported report page link"
+                />
+                <p class="text-xs leading-6 text-slate-500">
+                  Best support: direct PDF links, `vinfax.co/reports/pdf/...`, `vinfax.co/reports/view/...`, and some report pages we can extract text from.
+                </p>
+              </div>
+
+              <button
+                id="submit-button"
+                type="submit"
+                class="w-full rounded-2xl bg-brand px-5 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
+                disabled
+              >
+                Analyze Report Free
+              </button>
+            </form>
+
+            <p id="status-message" class="hidden rounded-2xl px-4 py-3 text-sm font-medium"></p>
+
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+              <span>Free launch access</span>
+              <span>PDF-only upload validation</span>
+              <span>Auto-deleted after {{ retention_hours }} hours</span>
+              <span>No affiliation with Carfax</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="mt-12 border-t border-slate-200 pt-6 text-center text-sm text-slate-500">
+        Powered by AI • Not affiliated with Carfax
+      </footer>
+    </main>
+
+    <script>
+      const dropZone = document.getElementById("drop-zone");
+      const fileInput = document.getElementById("file-input");
+      const fileName = document.getElementById("file-name");
+      const reportUrl = document.getElementById("report-url");
+      const uploadForm = document.getElementById("upload-form");
+      const submitButton = document.getElementById("submit-button");
+      const statusMessage = document.getElementById("status-message");
+
+      let selectedFile = null;
+
+      function setStatus(message, isError = false) {
+        statusMessage.textContent = message;
+        statusMessage.classList.remove(
+          "hidden",
+          "bg-rose-50",
+          "text-rose-700",
+          "ring-1",
+          "ring-rose-200",
+          "bg-slate-100",
+          "text-slate-700",
+          "ring-slate-200"
+        );
+        if (isError) {
+          statusMessage.classList.add("bg-rose-50", "text-rose-700", "ring-1", "ring-rose-200");
+        } else {
+          statusMessage.classList.add("bg-slate-100", "text-slate-700", "ring-1", "ring-slate-200");
+        }
+      }
+
+      function updateSelectedFile(file) {
+        selectedFile = file;
+        fileName.textContent = file ? file.name : "Drag and drop your PDF here";
+        updateSubmitState();
+      }
+
+      function updateSubmitState() {
+        submitButton.disabled = !selectedFile && !reportUrl.value.trim();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.add("border-teal-500", "bg-teal-50");
+        });
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropZone.classList.remove("border-teal-500", "bg-teal-50");
+        });
+      });
+
+      dropZone.addEventListener("drop", (event) => {
+        const [file] = event.dataTransfer.files;
+        if (file && file.type === "application/pdf") {
+          updateSelectedFile(file);
+          setStatus("PDF selected. Ready to analyze.");
+        } else {
+          setStatus("Please upload a valid PDF file.", true);
+        }
+      });
+
+      fileInput.addEventListener("change", (event) => {
+        const [file] = event.target.files;
+        if (file && file.type === "application/pdf") {
+          updateSelectedFile(file);
+          setStatus("PDF selected. Ready to analyze.");
+        } else {
+          updateSelectedFile(null);
+          setStatus("Please upload a valid PDF file.", true);
+        }
+      });
+
+      reportUrl.addEventListener("input", () => {
+        updateSubmitState();
+      });
+
+      uploadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const pastedUrl = reportUrl.value.trim();
+
+        if (!selectedFile && !pastedUrl) {
+          setStatus("Select a PDF or paste a supported report link before continuing.", true);
+          return;
+        }
+
+        submitButton.disabled = true;
+
+        try {
+          let fileId = "";
+
+          if (selectedFile) {
+            setStatus("Uploading report...");
+            const uploadData = new FormData();
+            uploadData.append("file", selectedFile);
+
+            const uploadResponse = await fetch("/upload", {
+              method: "POST",
+              body: uploadData,
+            });
+
+            const uploadResult = await uploadResponse.json();
+            if (!uploadResponse.ok) {
+              throw new Error(uploadResult.error || "Upload failed.");
+            }
+            fileId = uploadResult.file_id;
+          } else {
+            setStatus("Importing report link...");
+            const importResponse = await fetch("/import-link", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ report_url: pastedUrl }),
+            });
+
+            const importResult = await importResponse.json();
+            if (!importResponse.ok) {
+              throw new Error(importResult.error || "Unable to import that link.");
+            }
+            fileId = importResult.file_id;
+          }
+
+          setStatus("Analyzing report...");
+          const analysisResponse = await fetch("/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file_id: fileId }),
+          });
+
+          const analysisResult = await analysisResponse.json();
+          if (!analysisResponse.ok) {
+            throw new Error(analysisResult.error || "Analysis failed.");
+          }
+
+          setStatus("Redirecting to results...");
+          window.location.href = analysisResult.result_url;
+        } catch (error) {
+          setStatus(error.message || "Something went wrong. Please try again.", true);
+          updateSubmitState();
+        }
+      });
+    </script>
+  </body>
+</html>
