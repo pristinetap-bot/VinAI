@@ -30,7 +30,7 @@
     <div class="absolute left-[-8rem] top-[14rem] -z-10 h-[22rem] w-[22rem] rounded-full bg-sky-100/60 blur-3xl"></div>
     <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14">
       <section class="grid items-start gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
-        <div class="order-2 space-y-7 lg:order-1 lg:space-y-8">
+        <div class="order-2 flex flex-col gap-7 lg:order-1 lg:gap-8">
           <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/90 px-4 py-2 text-sm font-medium text-teal-800 shadow-sm backdrop-blur">
             <span class="h-2 w-2 rounded-full bg-teal-500"></span>
             Trusted AI analysis for used car buyers
@@ -79,7 +79,7 @@
             Analyze Report Free
           </a>
 
-          <div class="relative overflow-hidden rounded-[2rem] bg-slate-950 p-3 shadow-premium ring-1 ring-slate-200">
+          <div class="order-first relative overflow-hidden rounded-[2rem] bg-slate-950 p-3 shadow-premium ring-1 ring-slate-200 lg:order-none">
             <div class="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-cyan-400/20 to-transparent"></div>
             <img
               src="{{ url_for('static', filename='images/hero-futuristic-car-ai.png') }}"
