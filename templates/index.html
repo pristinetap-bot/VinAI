@@ -26,19 +26,24 @@
   </head>
   <body class="min-h-screen bg-mist text-ink">
     <div class="absolute inset-x-0 top-0 -z-10 h-[36rem] bg-gradient-to-b from-teal-50 via-white to-transparent"></div>
-    <main class="mx-auto max-w-6xl px-6 py-10 sm:py-14">
-      <section class="grid items-center gap-10 lg:grid-cols-[1.08fr_0.92fr]">
-        <div class="space-y-8">
+    <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:py-14">
+      <section class="grid items-start gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-10">
+        <div class="order-2 space-y-7 lg:order-1 lg:space-y-8">
           <div class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/90 px-4 py-2 text-sm font-medium text-teal-800 shadow-sm">
             <span class="h-2 w-2 rounded-full bg-teal-500"></span>
             Trusted AI analysis for used car buyers
           </div>
 
+          <div class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+            <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-teal-600 px-2 text-white">{{ usage_count }}+</span>
+            Trusted by car buyers
+          </div>
+
           <div class="space-y-5">
-            <h1 class="max-w-3xl text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
+            <h1 class="max-w-3xl text-4xl font-semibold leading-[0.95] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
               Avoid Costly Mistakes When Buying a Used Car
             </h1>
-            <p class="max-w-2xl text-lg leading-8 text-slate-600">
+            <p class="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
               Upload your Carfax report and get a free AI-powered decision with practical risk signals,
               pricing context, and a clear recommendation before you commit.
             </p>
@@ -67,7 +72,7 @@
 
           <a
             href="#analyzer"
-            class="inline-flex items-center justify-center rounded-2xl bg-brand px-6 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700"
+            class="inline-flex w-full items-center justify-center rounded-2xl bg-brand px-6 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
           >
             Analyze Report Free
           </a>
@@ -76,16 +81,16 @@
             <img
               src="https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1200&q=80"
               alt="Luxury car front view"
-              class="h-[320px] w-full rounded-[1.4rem] object-cover"
+              class="h-[220px] w-full rounded-[1.4rem] object-cover sm:h-[280px] lg:h-[320px]"
             />
           </div>
         </div>
 
-        <div id="analyzer" class="rounded-[2rem] bg-white p-7 shadow-premium ring-1 ring-slate-200">
+        <div id="analyzer" class="order-1 rounded-[2rem] bg-white p-5 shadow-premium ring-1 ring-slate-200 sm:p-6 lg:order-2 lg:p-7">
           <div class="space-y-6">
             <div class="space-y-2">
               <p class="text-sm font-semibold uppercase tracking-[0.24em] text-teal-700">Professional report review</p>
-              <h2 class="text-3xl font-semibold text-slate-950">Upload your vehicle history report</h2>
+              <h2 class="text-2xl font-semibold text-slate-950 sm:text-3xl">Upload your vehicle history report</h2>
               <p class="text-sm leading-7 text-slate-600">
                 Your PDF stays tied to a unique report ID and is analyzed immediately after upload.
               </p>
@@ -101,7 +106,7 @@
               </div>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-3">
+            <div class="grid gap-3 md:grid-cols-3">
               <div class="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
                 <p class="text-sm font-semibold text-slate-900">1. Upload PDF</p>
                 <p class="mt-1 text-sm text-slate-600">Drag, drop, or browse a Carfax report.</p>
@@ -119,7 +124,7 @@
             <form id="upload-form" class="space-y-5">
               <label
                 id="drop-zone"
-                class="group flex cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center transition duration-200 hover:border-teal-500 hover:bg-teal-50"
+                class="group flex cursor-pointer flex-col items-center justify-center rounded-[1.75rem] border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center transition duration-200 hover:border-teal-500 hover:bg-teal-50 sm:px-6 sm:py-12"
               >
                 <input id="file-input" type="file" accept="application/pdf" class="hidden" />
                 <div class="rounded-full bg-white p-4 shadow-sm ring-1 ring-slate-200 transition group-hover:scale-105">
@@ -165,7 +170,7 @@
 
             <p id="status-message" class="hidden rounded-2xl px-4 py-3 text-sm font-medium"></p>
 
-            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-slate-500">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
               <span>Free launch access</span>
               <span>PDF-only upload validation</span>
               <span>Auto-deleted after {{ retention_hours }} hours</span>

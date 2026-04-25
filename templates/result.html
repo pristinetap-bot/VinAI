@@ -19,22 +19,22 @@
   </head>
   <body class="min-h-screen bg-slate-50 text-slate-900">
     <div class="absolute inset-x-0 top-0 -z-10 h-80 bg-gradient-to-b from-teal-50 to-transparent"></div>
-    <main class="mx-auto max-w-5xl px-6 py-12">
-      <div class="mb-10 flex items-center justify-between gap-4">
+    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+      <div class="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p class="text-sm uppercase tracking-[0.2em] text-teal-700">VinAI report result</p>
-          <h1 class="mt-3 text-4xl font-semibold text-slate-950">Vehicle history analysis</h1>
+          <h1 class="mt-3 text-3xl font-semibold text-slate-950 sm:text-4xl">Vehicle history analysis</h1>
           <p class="mt-3 text-sm text-slate-500">
             This analysis and follow-up conversation are automatically deleted after {{ retention_hours }} hours.
           </p>
         </div>
-        <a href="/" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-slate-950">
+        <a href="/" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-slate-950">
           Analyze another report
         </a>
       </div>
 
       {% if expired %}
-      <section class="rounded-[2rem] bg-white p-12 text-center shadow-premium ring-1 ring-slate-200">
+      <section class="rounded-[2rem] bg-white p-8 text-center shadow-premium ring-1 ring-slate-200 sm:p-12">
         <h2 class="text-2xl font-semibold text-slate-950">This report has expired</h2>
         <p class="mt-4 text-slate-600">
           Uploaded reports, analysis results, and follow-up chat history are automatically deleted after {{ retention_hours }} hours.
@@ -47,7 +47,7 @@
         </a>
       </section>
       {% elif processing %}
-      <section class="rounded-[2rem] bg-white p-12 text-center shadow-premium ring-1 ring-slate-200">
+      <section class="rounded-[2rem] bg-white p-8 text-center shadow-premium ring-1 ring-slate-200 sm:p-12">
         <div class="mx-auto h-14 w-14 animate-spin rounded-full border-4 border-teal-100 border-t-teal-600"></div>
         <h2 class="mt-6 text-2xl font-semibold text-slate-950">Analyzing your report...</h2>
         <p class="mt-3 text-slate-600">
@@ -69,11 +69,11 @@
         'AVOID': 'bg-rose-50 text-rose-700 ring-rose-200'
       } %}
       {% set score_class = 'text-emerald-600' if result.score >= 80 else 'text-amber-500' if result.score >= 60 else 'text-rose-600' %}
-      <section class="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+      <section class="grid gap-5 lg:grid-cols-[0.78fr_1.22fr] lg:gap-6">
         <div class="space-y-6">
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
           <p class="text-sm uppercase tracking-[0.2em] text-slate-500">AI score</p>
-          <div class="mt-4 text-7xl font-semibold {{ score_class }}">{{ result.score }}<span class="text-3xl text-slate-400">/100</span></div>
+          <div class="mt-4 text-6xl font-semibold {{ score_class }} sm:text-7xl">{{ result.score }}<span class="text-2xl text-slate-400 sm:text-3xl">/100</span></div>
           <div class="mt-6 inline-flex rounded-full px-4 py-2 text-sm font-semibold ring-1 {{ verdict_class.get(result.verdict, verdict_class['CAUTION']) }}">
             {{ result.verdict }}
           </div>
@@ -87,7 +87,7 @@
           </div>
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Top reasons</h2>
             {% if result.top_reasons %}
             <ul class="mt-5 space-y-3">
@@ -103,12 +103,12 @@
             {% endif %}
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Price guidance</h2>
             <p class="mt-4 leading-8 text-slate-700">{{ result.price_guidance or result.fair_price_assessment or "No price guidance available." }}</p>
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Who should avoid this car</h2>
             {% if result.who_should_avoid %}
             <ul class="mt-5 space-y-3">
@@ -126,12 +126,12 @@
         </div>
 
         <div class="space-y-6">
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Summary</h2>
             <p class="mt-4 leading-8 text-slate-700">{{ result.summary }}</p>
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Why this matters</h2>
             {% if result.why_it_matters %}
             <ul class="mt-5 space-y-3">
@@ -148,7 +148,7 @@
           </div>
 
           <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Major deal breakers</h2>
               {% if result.major_deal_breakers %}
               <ul class="mt-5 space-y-3">
@@ -164,7 +164,7 @@
               {% endif %}
             </div>
 
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Negotiation leverage</h2>
               {% if result.negotiation_leverage %}
               <ul class="mt-5 space-y-3">
@@ -182,7 +182,7 @@
           </div>
 
           <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Needs inspection</h2>
               {% if result.needs_inspection %}
               <ul class="mt-5 space-y-3">
@@ -198,7 +198,7 @@
               {% endif %}
             </div>
 
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Inspection checklist</h2>
               {% if result.inspection_checklist %}
               <ul class="mt-5 space-y-3">
@@ -216,7 +216,7 @@
           </div>
 
           <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Ask the dealer</h2>
               {% if result.dealer_questions %}
               <ul class="mt-5 space-y-3">
@@ -232,7 +232,7 @@
               {% endif %}
             </div>
 
-            <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+            <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
               <h2 class="text-2xl font-semibold text-slate-950">Mechanic focus</h2>
               {% if result.mechanic_focus %}
               <ul class="mt-5 space-y-3">
@@ -249,7 +249,7 @@
             </div>
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <h2 class="text-2xl font-semibold text-slate-950">Key risks</h2>
             {% if result.risks %}
             <ul class="mt-5 space-y-3">
@@ -270,7 +270,7 @@
             <p class="mt-4 leading-8 text-slate-700">{{ result.confidence_note or "This analysis is based on report history and should be paired with an independent inspection." }}</p>
           </div>
 
-          <div class="rounded-[2rem] bg-white p-8 shadow-premium ring-1 ring-slate-200">
+          <div class="rounded-[2rem] bg-white p-6 shadow-premium ring-1 ring-slate-200 sm:p-8">
             <div class="flex items-center justify-between gap-4">
               <div>
                 <h2 class="text-2xl font-semibold text-slate-950">Ask follow-up questions</h2>
@@ -309,12 +309,12 @@
                 placeholder="Ask something like: Should I buy this if the dealer offers a 15% discount?"
                 {% if (result.chat_history|default([])|length) >= 3 %}disabled{% endif %}
               ></textarea>
-              <div class="flex items-center justify-between gap-4">
+              <div class="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p id="chat-status" class="text-sm text-slate-500"></p>
                 <button
                   id="chat-submit"
                   type="submit"
-                  class="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  class="w-full rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
                   {% if (result.chat_history|default([])|length) >= 3 %}disabled{% endif %}
                 >
                   Ask question

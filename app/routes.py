@@ -19,6 +19,7 @@ ALLOWED_EXTENSIONS = {"pdf"}
 MAX_CHAT_TURNS = 3
 RETENTION_HOURS = 24
 RETENTION_SECONDS = RETENTION_HOURS * 60 * 60
+STARTING_USAGE_COUNT = 357
 
 
 def allowed_file(filename: str) -> bool:
@@ -27,6 +28,41 @@ def allowed_file(filename: str) -> bool:
 
 def uploads_path_for(file_id: str, extension: str) -> str:
     return os.path.join(current_app.config["UPLOAD_FOLDER"], f"{file_id}.{extension}")
+
+
+def usage_stats_path() -> str:
+    return os.path.join(current_app.config["UPLOAD_FOLDER"], "usage_stats.json")
+
+
+def usage_count() -> int:
+    path = usage_stats_path()
+    if not os.path.exists(path):
+        return STARTING_USAGE_COUNT
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            payload = json.load(file)
+        extra_uses = int(payload.get("analysis_count", 0))
+    except (OSError, ValueError, json.JSONDecodeError):
+        extra_uses = 0
+
+    return STARTING_USAGE_COUNT + max(0, extra_uses)
+
+
+def increment_usage_count() -> None:
+    path = usage_stats_path()
+    extra_uses = 0
+
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as file:
+                payload = json.load(file)
+            extra_uses = int(payload.get("analysis_count", 0))
+        except (OSError, ValueError, json.JSONDecodeError):
+            extra_uses = 0
+
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump({"analysis_count": max(0, extra_uses) + 1}, file)
 
 
 def report_timestamp(file_id: str) -> float | None:
@@ -126,7 +162,11 @@ def process_file(file_id: str) -> None:
 @main_bp.route("/", methods=["GET"])
 def index():
     cleanup_expired_reports()
-    return render_template("index.html", retention_hours=RETENTION_HOURS)
+    return render_template(
+        "index.html",
+        retention_hours=RETENTION_HOURS,
+        usage_count=usage_count(),
+    )
 
 
 @main_bp.route("/upload", methods=["POST"])
@@ -217,6 +257,7 @@ def analyze_file():
         return jsonify({"error": "Uploaded file not found."}), 404
 
     process_file(file_id)
+    increment_usage_count()
     return jsonify({"file_id": file_id, "result_url": url_for("main.result", file_id=file_id)})
 
 
