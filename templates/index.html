@@ -31,11 +31,16 @@
         <div class="order-1 flex flex-col gap-7 lg:order-1 lg:gap-8">
           <div class="space-y-5">
             <h1 class="max-w-3xl text-4xl font-semibold leading-[0.95] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              Avoid Costly Mistakes When Buying a Used Car
+              CarTrustAI Protects You From Costly Used Car Mistakes
             </h1>
             <p class="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+              {% if free_launch_active %}
               Upload your Carfax report and get a free AI-powered decision with practical risk signals,
               pricing context, and a clear recommendation before you commit.
+              {% else %}
+              Upload your Carfax report and get practical risk signals, pricing context, and a clear recommendation
+              before you commit.
+              {% endif %}
             </p>
           </div>
 
@@ -45,9 +50,18 @@
               Trusted AI analysis for used car buyers
             </div>
 
-            <div class="inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-              <span class="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-teal-600 px-2 text-white">{{ usage_count }}+</span>
-              Trusted by car buyers
+            <div class="inline-flex max-w-full items-center gap-3 rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+              <span class="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-teal-600 px-3 text-white">{{ usage_count }}+</span>
+              <span class="flex min-w-0 flex-col leading-tight">
+                <span>Trusted by car buyers</span>
+                <span class="text-xs font-medium text-slate-500">
+                  {% if free_launch_active %}
+                  {{ remaining_free_analyses }} of the first {{ free_analysis_limit }} free analyses left
+                  {% else %}
+                  The first {{ free_analysis_limit }} free analyses have been claimed
+                  {% endif %}
+                </span>
+              </span>
             </div>
           </div>
 
@@ -76,7 +90,7 @@
             href="#analyzer"
             class="inline-flex w-full items-center justify-center rounded-2xl bg-brand px-6 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 sm:w-auto"
           >
-            Analyze Report Free
+            {% if free_launch_active %}Analyze Report Free{% else %}Free Launch Full{% endif %}
           </a>
 
           <div class="overflow-hidden rounded-[2rem] bg-white p-3 shadow-premium ring-1 ring-slate-200">
@@ -105,6 +119,13 @@
               </div>
               <div class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
                 Uploaded reports, analysis results, and follow-up chat history are automatically deleted after {{ retention_hours }} hours.
+              </div>
+              <div class="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                {% if free_launch_active %}
+                {{ remaining_free_analyses }} of the first {{ free_analysis_limit }} free analyses are still available.
+                {% else %}
+                The first {{ free_analysis_limit }} free analyses have been claimed. Free launch access is now closed.
+                {% endif %}
               </div>
             </div>
 
@@ -166,7 +187,7 @@
                 class="w-full rounded-2xl bg-brand px-5 py-4 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition duration-200 hover:-translate-y-0.5 hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none"
                 disabled
               >
-                Analyze Report Free
+                {% if free_launch_active %}Analyze Report Free{% else %}Free Launch Full{% endif %}
               </button>
             </form>
 
@@ -188,6 +209,7 @@
     </main>
 
     <script>
+      const freeLaunchActive = {{ 'true' if free_launch_active else 'false' }};
       const dropZone = document.getElementById("drop-zone");
       const fileInput = document.getElementById("file-input");
       const fileName = document.getElementById("file-name");
@@ -224,7 +246,7 @@
       }
 
       function updateSubmitState() {
-        submitButton.disabled = !selectedFile && !reportUrl.value.trim();
+        submitButton.disabled = !freeLaunchActive || (!selectedFile && !reportUrl.value.trim());
       }
 
       ["dragenter", "dragover"].forEach((eventName) => {
@@ -269,6 +291,11 @@
       uploadForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         const pastedUrl = reportUrl.value.trim();
+
+        if (!freeLaunchActive) {
+          setStatus("The first 1,000 free analyses have already been claimed.", true);
+          return;
+        }
 
         if (!selectedFile && !pastedUrl) {
           setStatus("Select a PDF or paste a supported report link before continuing.", true);

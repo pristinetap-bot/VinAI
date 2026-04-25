@@ -20,6 +20,7 @@ MAX_CHAT_TURNS = 3
 RETENTION_HOURS = 24
 RETENTION_SECONDS = RETENTION_HOURS * 60 * 60
 STARTING_USAGE_COUNT = 357
+FREE_ANALYSIS_LIMIT = 1000
 
 
 def allowed_file(filename: str) -> bool:
@@ -47,6 +48,14 @@ def usage_count() -> int:
         extra_uses = 0
 
     return STARTING_USAGE_COUNT + max(0, extra_uses)
+
+
+def remaining_free_analyses() -> int:
+    return max(0, FREE_ANALYSIS_LIMIT - usage_count())
+
+
+def free_launch_active() -> bool:
+    return usage_count() < FREE_ANALYSIS_LIMIT
 
 
 def increment_usage_count() -> None:
@@ -166,6 +175,9 @@ def index():
         "index.html",
         retention_hours=RETENTION_HOURS,
         usage_count=usage_count(),
+        remaining_free_analyses=remaining_free_analyses(),
+        free_analysis_limit=FREE_ANALYSIS_LIMIT,
+        free_launch_active=free_launch_active(),
     )
 
 
@@ -176,6 +188,9 @@ def test_index():
         "test.html",
         retention_hours=RETENTION_HOURS,
         usage_count=usage_count(),
+        remaining_free_analyses=remaining_free_analyses(),
+        free_analysis_limit=FREE_ANALYSIS_LIMIT,
+        free_launch_active=free_launch_active(),
     )
 
 
@@ -261,6 +276,9 @@ def analyze_file():
 
     if not file_id:
         return jsonify({"error": "Missing file_id."}), 400
+
+    if not free_launch_active():
+        return jsonify({"error": "The first 1,000 free analyses have been claimed."}), 403
 
     source_path = report_source_path(file_id)
     if source_path is None:
