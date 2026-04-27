@@ -104,6 +104,8 @@ def cleanup_expired_reports() -> None:
     file_ids: set[str] = set()
 
     for filename in os.listdir(upload_dir):
+        if filename == "usage_stats.json":
+            continue
         path = os.path.join(upload_dir, filename)
         if not os.path.isfile(path):
             continue
