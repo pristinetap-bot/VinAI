@@ -28,9 +28,16 @@
             This analysis and follow-up conversation are automatically deleted after {{ retention_hours }} hours.
           </p>
         </div>
-        <a href="/" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-slate-950">
-          Analyze another report
-        </a>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          {% if not expired and not processing %}
+          <a href="{{ url_for('main.download_result_pdf', file_id=file_id) }}" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+            Download PDF
+          </a>
+          {% endif %}
+          <a href="/" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:border-teal-300 hover:text-slate-950">
+            Analyze another report
+          </a>
+        </div>
       </div>
 
       {% if expired %}

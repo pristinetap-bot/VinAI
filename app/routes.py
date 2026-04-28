@@ -5,10 +5,11 @@ import os
 import uuid
 from datetime import datetime
 from functools import wraps
+from io import BytesIO
 from pathlib import Path
 from time import time
 
-from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, send_file, session, url_for
 from werkzeug.utils import secure_filename
 
 from app.ai_service import AIProcessingError, analyze_vehicle_report, answer_follow_up_question
@@ -283,6 +284,150 @@ def admin_required(view):
     return wrapped_view
 
 
+def analysis_pdf_filename(file_id: str) -> str:
+    return f"cartrustai-analysis-{file_id}.pdf"
+
+
+def build_analysis_pdf(file_id: str, result_data: dict[str, object]) -> BytesIO:
+    from reportlab.lib.colors import HexColor
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+    from reportlab.pdfgen import canvas
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    left = 54
+    right = width - 54
+    top = height - 54
+    bottom = 54
+    line_height = 16
+
+    heading_color = HexColor("#0f172a")
+    accent_color = HexColor("#0f766e")
+    body_color = HexColor("#334155")
+    muted_color = HexColor("#64748b")
+
+    y = top
+
+    def new_page() -> None:
+        nonlocal y
+        pdf.showPage()
+        y = top
+
+    def ensure_space(lines_needed: int = 2) -> None:
+        nonlocal y
+        if y - (lines_needed * line_height) < bottom:
+            new_page()
+
+    def wrap_text(text: str, font_name: str, font_size: int, max_width: float) -> list[str]:
+        words = (text or "").split()
+        if not words:
+            return [""]
+        lines: list[str] = []
+        current = words[0]
+        for word in words[1:]:
+            candidate = f"{current} {word}"
+            if stringWidth(candidate, font_name, font_size) <= max_width:
+                current = candidate
+            else:
+                lines.append(current)
+                current = word
+        lines.append(current)
+        return lines
+
+    def draw_kicker(text: str) -> None:
+        nonlocal y
+        ensure_space(2)
+        pdf.setFillColor(accent_color)
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(left, y, text.upper())
+        y -= 24
+
+    def draw_title(text: str) -> None:
+        nonlocal y
+        ensure_space(4)
+        pdf.setFillColor(heading_color)
+        pdf.setFont("Helvetica-Bold", 24)
+        for line in wrap_text(text, "Helvetica-Bold", 24, right - left):
+            pdf.drawString(left, y, line)
+            y -= 30
+        y -= 6
+
+    def draw_meta(label: str, value: str) -> None:
+        nonlocal y
+        ensure_space(2)
+        pdf.setFont("Helvetica-Bold", 11)
+        pdf.setFillColor(muted_color)
+        pdf.drawString(left, y, f"{label}:")
+        pdf.setFont("Helvetica", 11)
+        pdf.setFillColor(body_color)
+        pdf.drawString(left + 70, y, value)
+        y -= 18
+
+    def draw_section(title: str, content: str | None = None, items: list[str] | None = None) -> None:
+        nonlocal y
+        section_items = [item.strip() for item in (items or []) if item and item.strip()]
+        if not content and not section_items:
+            return
+
+        ensure_space(3)
+        pdf.setFont("Helvetica-Bold", 15)
+        pdf.setFillColor(heading_color)
+        pdf.drawString(left, y, title)
+        y -= 20
+
+        pdf.setFont("Helvetica", 11)
+        pdf.setFillColor(body_color)
+
+        if content:
+            for line in wrap_text(content.strip(), "Helvetica", 11, right - left):
+                ensure_space(1)
+                pdf.drawString(left, y, line)
+                y -= line_height
+            y -= 4
+
+        for item in section_items:
+            bullet_indent = left + 12
+            wrapped = wrap_text(item, "Helvetica", 11, right - bullet_indent)
+            ensure_space(len(wrapped) + 1)
+            pdf.drawString(left, y, "•")
+            pdf.drawString(bullet_indent, y, wrapped[0])
+            y -= line_height
+            for line in wrapped[1:]:
+                pdf.drawString(bullet_indent, y, line)
+                y -= line_height
+        y -= 10
+
+    draw_kicker("CarTrustAI analysis")
+    draw_title("Vehicle History Analysis")
+    draw_meta("Report ID", file_id)
+    draw_meta("Generated", datetime.now().strftime("%b %d, %Y at %I:%M %p"))
+    draw_meta("Score", f"{result_data.get('score', 0)}/100")
+    draw_meta("Verdict", str(result_data.get("verdict", "CAUTION")))
+    y -= 8
+
+    draw_section("Bottom line", content=str(result_data.get("bottom_line") or result_data.get("summary") or ""))
+    draw_section("Summary", content=str(result_data.get("summary") or ""))
+    draw_section("Price insight", content=str(result_data.get("price_insight") or ""))
+    draw_section("Price guidance", content=str(result_data.get("price_guidance") or result_data.get("fair_price_assessment") or ""))
+    draw_section("Top reasons", items=result_data.get("top_reasons") if isinstance(result_data.get("top_reasons"), list) else [])
+    draw_section("Why this matters", items=result_data.get("why_it_matters") if isinstance(result_data.get("why_it_matters"), list) else [])
+    draw_section("Major deal breakers", items=result_data.get("major_deal_breakers") if isinstance(result_data.get("major_deal_breakers"), list) else [])
+    draw_section("Needs inspection", items=result_data.get("needs_inspection") if isinstance(result_data.get("needs_inspection"), list) else [])
+    draw_section("Negotiation leverage", items=result_data.get("negotiation_leverage") if isinstance(result_data.get("negotiation_leverage"), list) else [])
+    draw_section("Inspection checklist", items=result_data.get("inspection_checklist") if isinstance(result_data.get("inspection_checklist"), list) else [])
+    draw_section("Who should avoid this car", items=result_data.get("who_should_avoid") if isinstance(result_data.get("who_should_avoid"), list) else [])
+    draw_section("Ask the dealer", items=result_data.get("dealer_questions") if isinstance(result_data.get("dealer_questions"), list) else [])
+    draw_section("Mechanic focus", items=result_data.get("mechanic_focus") if isinstance(result_data.get("mechanic_focus"), list) else [])
+    draw_section("Key risks", items=result_data.get("risks") if isinstance(result_data.get("risks"), list) else [])
+    draw_section("Confidence note", content=str(result_data.get("confidence_note") or "This analysis is based on report history and should be paired with an independent inspection."))
+
+    pdf.save()
+    buffer.seek(0)
+    return buffer
+
+
 def process_file(file_id: str) -> None:
     json_path = uploads_path_for(file_id, "json")
 
@@ -484,6 +629,28 @@ def result(file_id: str):
         result=result_data,
         expired=False,
         retention_hours=RETENTION_HOURS,
+    )
+
+
+@main_bp.route("/result/<file_id>/download", methods=["GET"])
+def download_result_pdf(file_id: str):
+    cleanup_expired_reports()
+    if is_report_expired(file_id):
+        return redirect(url_for("main.result", file_id=file_id))
+
+    json_path = uploads_path_for(file_id, "json")
+    if not os.path.exists(json_path):
+        return redirect(url_for("main.result", file_id=file_id))
+
+    with open(json_path, "r", encoding="utf-8") as file:
+        result_data = json.load(file)
+
+    pdf_buffer = build_analysis_pdf(file_id, result_data)
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=analysis_pdf_filename(file_id),
     )
 
 
