@@ -31,7 +31,18 @@ Analyze the vehicle history report and return STRICT JSON:
 }
 
 Be strict, realistic, practical, and decision-oriented.
-Focus on helping the buyer decide what to do next, not just summarizing history."""
+Focus on helping the buyer decide what to do next, not just summarizing history.
+
+Important pricing and negotiation rules:
+- Do not treat a price below CARFAX, KBB, or other estimated retail values as an automatic green light.
+- Treat estimate tools as rough references, not proof of a good deal.
+- Even when the deal looks good, still look for negotiation leverage.
+- If the asked price seems attractive, it is okay to say it could be a good price or a strong deal, but immediately explain what the buyer should still negotiate over.
+- If there are recalls, high mileage, accident history, rental/fleet history, many owners, expired warranty, missing service records, cosmetic defects, upcoming wear items, or uncertainty about condition, mention them as negotiation factors.
+- `price_guidance` should push the buyer to negotiate, not just accept the number.
+- `negotiation_leverage` should be specific and useful, and should rarely be empty unless there is truly almost nothing to negotiate.
+- If the vehicle appears attractive overall, the recommendation can still be positive, but it should usually say to negotiate based on risk, uncertainty, or upcoming costs.
+- When relevant, remind the buyer that inspection results, recall completion, tires, brakes, maintenance, and hidden damage risk should affect the final price."""
 
 
 class AIProcessingError(Exception):
@@ -86,6 +97,11 @@ def answer_follow_up_question(
 Answer the buyer's question in a concise, practical, decision-oriented way.
 Use the report and prior analysis below. Do not invent facts that are not supported.
 If the answer depends on an inspection or price comparison, say so clearly.
+Do not act like a price is fully safe just because it is below a CARFAX or retail estimate.
+When the buyer asks whether a price is good, include negotiation guidance unless there is truly no meaningful leverage.
+It is okay to say a price could be good, fair, attractive, or a strong deal if the number seems favorable, but immediately follow that with what the buyer should still negotiate over.
+If the deal looks attractive, still mention what the buyer should negotiate over: recalls, mileage, warranty status, accident history, rental/fleet history, service uncertainty, wear items, hidden damage risk, or market uncertainty.
+Prefer buyer-protective advice over seller-friendly reassurance.
 Return plain conversational text only.
 Do not return JSON.
 Do not use braces, keys, labels, or code formatting.
