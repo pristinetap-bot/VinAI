@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CarTrustAI Admin Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-white">
+    <div class="absolute inset-x-0 top-0 -z-10 h-72 bg-gradient-to-b from-teal-500/15 to-transparent"></div>
+    <main class="mx-auto flex min-h-screen max-w-5xl items-center px-4 py-10 sm:px-6">
+      <section class="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div class="space-y-6">
+          <p class="inline-flex rounded-full border border-teal-400/20 bg-teal-400/10 px-4 py-2 text-sm font-medium text-teal-200">
+            CarTrustAI Admin
+          </p>
+          <div class="space-y-4">
+            <h1 class="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Monitor real usage, active reports, and free-launch progress.
+            </h1>
+            <p class="max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+              Sign in to review how many people are using the tool, how many free analyses remain,
+              which reports are active, and how much follow-up chat engagement the product is getting.
+            </p>
+          </div>
+        </div>
+
+        <div class="rounded-[2rem] border border-white/10 bg-slate-900/80 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur sm:p-8">
+          <div class="space-y-6">
+            <div class="space-y-2">
+              <p class="text-sm font-semibold uppercase tracking-[0.24em] text-teal-200">Secure sign-in</p>
+              <h2 class="text-3xl font-semibold text-white">Admin portal</h2>
+              <p class="text-sm leading-7 text-slate-400">
+                Username defaults to <span class="font-semibold text-slate-200">{{ admin_username }}</span>.
+              </p>
+            </div>
+
+            {% if not admin_configured %}
+            <div class="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+              Set <code class="font-semibold">ADMIN_PASSWORD</code> in your environment before using the admin portal.
+            </div>
+            {% endif %}
+
+            {% if error %}
+            <div class="rounded-2xl border border-rose-400/20 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+              {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-4">
+              <div class="space-y-2">
+                <label for="username" class="block text-sm font-semibold text-slate-200">Username</label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  value="{{ admin_username }}"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20"
+                  autocomplete="username"
+                  required
+                />
+              </div>
+
+              <div class="space-y-2">
+                <label for="password" class="block text-sm font-semibold text-slate-200">Password</label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  class="w-full rounded-2xl border border-white/10 bg-slate-950 px-4 py-3 text-sm text-white outline-none transition focus:border-teal-400 focus:ring-2 focus:ring-teal-500/20"
+                  autocomplete="current-password"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                class="w-full rounded-2xl bg-teal-500 px-5 py-4 text-base font-semibold text-slate-950 transition hover:bg-teal-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                {% if not admin_configured %}disabled{% endif %}
+              >
+                Open admin portal
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CarTrustAI Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-white">
+    <div class="absolute inset-x-0 top-0 -z-10 h-80 bg-gradient-to-b from-teal-500/15 to-transparent"></div>
+    <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10">
+      <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div class="space-y-3">
+          <p class="inline-flex rounded-full border border-teal-400/20 bg-teal-400/10 px-4 py-2 text-sm font-medium text-teal-200">
+            CarTrustAI Admin
+          </p>
+          <div>
+            <h1 class="text-4xl font-semibold tracking-tight text-white sm:text-5xl">Usage dashboard</h1>
+            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
+              Track total usage, free-launch progress, active reports, follow-up chat engagement, and recent report activity.
+            </p>
+          </div>
+        </div>
+
+        <form method="post" action="{{ url_for('main.admin_logout') }}">
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:border-teal-300 hover:bg-white/10"
+          >
+            Log out
+          </button>
+        </form>
+      </div>
+
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Total trust count</p>
+          <p class="mt-3 text-4xl font-semibold text-white">{{ metrics.usage_count }}+</p>
+          <p class="mt-2 text-sm text-slate-400">Displayed on the landing pages.</p>
+        </div>
+
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Free launch remaining</p>
+          <p class="mt-3 text-4xl font-semibold text-white">{{ metrics.remaining_free_analyses }}</p>
+          <p class="mt-2 text-sm {% if metrics.free_launch_active %}text-emerald-300{% else %}text-amber-300{% endif %}">
+            {% if metrics.free_launch_active %}
+            Still open for the first {{ metrics.free_analysis_limit }} uses.
+            {% else %}
+            The first {{ metrics.free_analysis_limit }} free analyses have been claimed.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Active reports</p>
+          <p class="mt-3 text-4xl font-semibold text-white">{{ metrics.active_reports_count }}</p>
+          <p class="mt-2 text-sm text-slate-400">Not yet deleted by the 24-hour retention window.</p>
+        </div>
+
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Last analysis</p>
+          <p class="mt-3 text-xl font-semibold text-white">{{ metrics.last_analysis_label }}</p>
+          <p class="mt-2 text-sm text-slate-400">Most recent successful analysis request.</p>
+        </div>
+      </section>
+
+      <section class="mt-6 grid gap-4 lg:grid-cols-3">
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Launch activity</p>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.analyses_used_after_launch }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Analyses since launch</p>
+            </div>
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.average_score if metrics.average_score is not none else "—" }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Avg score on active reports</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Source mix</p>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.pdf_upload_count }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">PDF uploads</p>
+            </div>
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.link_import_count }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Imported links</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Follow-up engagement</p>
+          <div class="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.reports_with_chat_count }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Reports with chat</p>
+            </div>
+            <div>
+              <p class="text-3xl font-semibold text-white">{{ metrics.chat_turns_count }}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.2em] text-slate-500">Total chat turns</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Completed reports</p>
+          <p class="mt-3 text-4xl font-semibold text-emerald-300">{{ metrics.completed_reports_count }}</p>
+        </div>
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Failed reports</p>
+          <p class="mt-3 text-4xl font-semibold text-amber-300">{{ metrics.failed_reports_count }}</p>
+        </div>
+        <div class="rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+          <p class="text-sm font-medium text-slate-400">Retention window</p>
+          <p class="mt-3 text-4xl font-semibold text-white">24h</p>
+          <p class="mt-2 text-sm text-slate-400">Active metrics reflect reports still inside the auto-delete window.</p>
+        </div>
+      </section>
+
+      <section class="mt-8 rounded-[1.75rem] border border-white/10 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/30">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold text-white">Recent report activity</h2>
+            <p class="mt-2 text-sm text-slate-400">Latest active reports still stored on the server.</p>
+          </div>
+          <p class="text-sm text-slate-500">Showing up to 20 recent reports</p>
+        </div>
+
+        {% if metrics.reports %}
+        <div class="mt-6 overflow-x-auto">
+          <table class="min-w-full divide-y divide-white/10 text-left text-sm">
+            <thead>
+              <tr class="text-slate-400">
+                <th class="px-4 py-3 font-medium">Created</th>
+                <th class="px-4 py-3 font-medium">Source</th>
+                <th class="px-4 py-3 font-medium">Status</th>
+                <th class="px-4 py-3 font-medium">Score</th>
+                <th class="px-4 py-3 font-medium">Verdict</th>
+                <th class="px-4 py-3 font-medium">Chat turns</th>
+                <th class="px-4 py-3 font-medium">Report</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5 text-slate-200">
+              {% for report in metrics.reports %}
+              <tr class="align-top">
+                <td class="px-4 py-4">{{ report.created_label }}</td>
+                <td class="px-4 py-4">{{ report.source_type }}</td>
+                <td class="px-4 py-4">
+                  <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if report.status == 'completed' %}bg-emerald-500/15 text-emerald-200{% elif report.status == 'failed' %}bg-amber-500/15 text-amber-200{% else %}bg-slate-700 text-slate-200{% endif %}">
+                    {{ report.status }}
+                  </span>
+                </td>
+                <td class="px-4 py-4">{{ report.score if report.score is not none else "—" }}</td>
+                <td class="px-4 py-4">{{ report.verdict }}</td>
+                <td class="px-4 py-4">{{ report.chat_turns }}</td>
+                <td class="px-4 py-4">
+                  <a href="{{ report.result_url }}" class="font-medium text-teal-300 transition hover:text-teal-200">
+                    Open result
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="mt-6 rounded-2xl border border-white/10 bg-white/5 px-4 py-6 text-sm text-slate-400">
+          No active reports yet. Once people start using the analyzer, recent activity will show up here.
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </body>
+</html>

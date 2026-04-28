@@ -21,6 +21,8 @@ def create_app() -> Flask:
     app.config["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY", "")
     app.config["OPENAI_MODEL"] = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
     app.config["APP_BASE_URL"] = os.getenv("APP_BASE_URL", "http://localhost:8000")
+    app.config["ADMIN_USERNAME"] = os.getenv("ADMIN_USERNAME", "admin")
+    app.config["ADMIN_PASSWORD"] = os.getenv("ADMIN_PASSWORD", "")
 
     from app.routes import main_bp
 

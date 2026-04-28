@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import os
 import uuid
+from datetime import datetime
+from functools import wraps
 from pathlib import Path
 from time import time
 
-from flask import Blueprint, current_app, jsonify, render_template, request, url_for
+from flask import Blueprint, current_app, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
 
 from app.ai_service import AIProcessingError, analyze_vehicle_report, answer_follow_up_question
@@ -61,17 +63,62 @@ def free_launch_active() -> bool:
 def increment_usage_count() -> None:
     path = usage_stats_path()
     extra_uses = 0
+    pdf_upload_count = 0
+    link_import_count = 0
 
     if os.path.exists(path):
         try:
             with open(path, "r", encoding="utf-8") as file:
                 payload = json.load(file)
             extra_uses = int(payload.get("analysis_count", 0))
+            pdf_upload_count = int(payload.get("pdf_upload_count", 0))
+            link_import_count = int(payload.get("link_import_count", 0))
         except (OSError, ValueError, json.JSONDecodeError):
             extra_uses = 0
+            pdf_upload_count = 0
+            link_import_count = 0
+
+    source_type = session.pop("pending_analysis_source", "pdf")
+    if source_type == "link":
+        link_import_count += 1
+    else:
+        pdf_upload_count += 1
 
     with open(path, "w", encoding="utf-8") as file:
-        json.dump({"analysis_count": max(0, extra_uses) + 1}, file)
+        json.dump(
+            {
+                "analysis_count": max(0, extra_uses) + 1,
+                "pdf_upload_count": max(0, pdf_upload_count),
+                "link_import_count": max(0, link_import_count),
+                "last_analysis_at": int(time()),
+            },
+            file,
+        )
+
+
+def usage_stats() -> dict[str, int | None]:
+    path = usage_stats_path()
+    stats = {
+        "analysis_count": max(0, usage_count() - STARTING_USAGE_COUNT),
+        "pdf_upload_count": 0,
+        "link_import_count": 0,
+        "last_analysis_at": None,
+    }
+    if not os.path.exists(path):
+        return stats
+
+    try:
+        with open(path, "r", encoding="utf-8") as file:
+            payload = json.load(file)
+        stats["analysis_count"] = max(0, int(payload.get("analysis_count", 0)))
+        stats["pdf_upload_count"] = max(0, int(payload.get("pdf_upload_count", 0)))
+        stats["link_import_count"] = max(0, int(payload.get("link_import_count", 0)))
+        last_analysis_at = payload.get("last_analysis_at")
+        stats["last_analysis_at"] = int(last_analysis_at) if last_analysis_at else None
+    except (OSError, ValueError, json.JSONDecodeError):
+        pass
+
+    return stats
 
 
 def report_timestamp(file_id: str) -> float | None:
@@ -125,6 +172,115 @@ def is_report_expired(file_id: str) -> bool:
     if timestamp is None:
         return True
     return timestamp < (time() - RETENTION_SECONDS)
+
+
+def format_timestamp(timestamp: float | int | None) -> str:
+    if not timestamp:
+        return "Unavailable"
+    return datetime.fromtimestamp(timestamp).strftime("%b %d, %Y at %I:%M %p")
+
+
+def collect_active_reports() -> list[dict[str, object]]:
+    upload_dir = current_app.config["UPLOAD_FOLDER"]
+    reports: list[dict[str, object]] = []
+    file_ids: set[str] = set()
+
+    for filename in os.listdir(upload_dir):
+        if filename == "usage_stats.json":
+            continue
+        path = os.path.join(upload_dir, filename)
+        if not os.path.isfile(path):
+            continue
+        file_id, extension = os.path.splitext(filename)
+        if extension.lower() not in {".pdf", ".txt", ".json"}:
+            continue
+        file_ids.add(file_id)
+
+    for file_id in file_ids:
+        if is_report_expired(file_id):
+            continue
+
+        json_path = uploads_path_for(file_id, "json")
+        source_path = report_source_path(file_id)
+        timestamp = report_timestamp(file_id)
+        source_type = "Imported link" if source_path and source_path.endswith(".txt") else "PDF upload"
+        report_data: dict[str, object] = {}
+
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as file:
+                    report_data = json.load(file)
+            except (OSError, ValueError, json.JSONDecodeError):
+                report_data = {}
+
+        chat_history = report_data.get("chat_history", []) if isinstance(report_data, dict) else []
+        chat_turns = len(chat_history) if isinstance(chat_history, list) else 0
+        status = report_data.get("status", "processing") if isinstance(report_data, dict) else "processing"
+        score = report_data.get("score") if isinstance(report_data, dict) else None
+        verdict = report_data.get("verdict") if isinstance(report_data, dict) else None
+
+        reports.append(
+            {
+                "file_id": file_id,
+                "source_type": source_type,
+                "status": status,
+                "score": score if isinstance(score, int) else None,
+                "verdict": verdict if isinstance(verdict, str) else "Processing",
+                "chat_turns": chat_turns,
+                "created_label": format_timestamp(timestamp),
+                "timestamp": timestamp or 0,
+                "summary": report_data.get("summary", "") if isinstance(report_data, dict) else "",
+                "result_url": url_for("main.result", file_id=file_id),
+            }
+        )
+
+    reports.sort(key=lambda item: item["timestamp"], reverse=True)
+    return reports
+
+
+def dashboard_metrics() -> dict[str, object]:
+    reports = collect_active_reports()
+    usage = usage_stats()
+    completed_reports = [report for report in reports if report["status"] == "completed"]
+    failed_reports = [report for report in reports if report["status"] == "failed"]
+    reports_with_chat = [report for report in reports if int(report["chat_turns"]) > 0]
+    score_values = [int(report["score"]) for report in completed_reports if isinstance(report["score"], int)]
+
+    return {
+        "usage_count": usage_count(),
+        "remaining_free_analyses": remaining_free_analyses(),
+        "free_analysis_limit": FREE_ANALYSIS_LIMIT,
+        "free_launch_active": free_launch_active(),
+        "analyses_used_after_launch": usage["analysis_count"],
+        "pdf_upload_count": usage["pdf_upload_count"],
+        "link_import_count": usage["link_import_count"],
+        "last_analysis_label": format_timestamp(usage["last_analysis_at"]),
+        "active_reports_count": len(reports),
+        "completed_reports_count": len(completed_reports),
+        "failed_reports_count": len(failed_reports),
+        "reports_with_chat_count": len(reports_with_chat),
+        "chat_turns_count": sum(int(report["chat_turns"]) for report in reports),
+        "average_score": round(sum(score_values) / len(score_values)) if score_values else None,
+        "reports": reports[:20],
+    }
+
+
+def admin_configured() -> bool:
+    return bool(current_app.config.get("ADMIN_PASSWORD"))
+
+
+def admin_logged_in() -> bool:
+    return session.get("admin_authenticated") is True
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped_view(*args, **kwargs):
+        if not admin_logged_in():
+            return redirect(url_for("main.admin_login"))
+        return view(*args, **kwargs)
+
+    return wrapped_view
 
 
 def process_file(file_id: str) -> None:
@@ -214,6 +370,7 @@ def upload_file():
     file_id = str(uuid.uuid4())
     save_path = uploads_path_for(file_id, "pdf")
     uploaded_file.save(save_path)
+    session["pending_analysis_source"] = "pdf"
 
     return jsonify({"file_id": file_id})
 
@@ -261,6 +418,8 @@ def import_link():
         return jsonify({"error": str(exc)}), 400
     except Exception:
         return jsonify({"error": "Unable to import that link right now."}), 500
+
+    session["pending_analysis_source"] = "link"
 
     return jsonify(
         {
@@ -378,3 +537,45 @@ def chat(file_id: str):
 @main_bp.route("/health", methods=["GET"])
 def healthcheck():
     return jsonify({"status": "ok"})
+
+
+@main_bp.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    cleanup_expired_reports()
+    error = ""
+
+    if request.method == "POST":
+        username = str(request.form.get("username", "")).strip()
+        password = str(request.form.get("password", ""))
+
+        if not admin_configured():
+            error = "Set ADMIN_PASSWORD in your environment before using the admin portal."
+        elif (
+            username == current_app.config["ADMIN_USERNAME"]
+            and password == current_app.config["ADMIN_PASSWORD"]
+        ):
+            session["admin_authenticated"] = True
+            return redirect(url_for("main.admin_dashboard"))
+        else:
+            error = "Invalid admin credentials."
+
+    return render_template(
+        "admin_login.html",
+        error=error,
+        admin_username=current_app.config["ADMIN_USERNAME"],
+        admin_configured=admin_configured(),
+    )
+
+
+@main_bp.route("/admin/logout", methods=["POST"])
+@admin_required
+def admin_logout():
+    session.pop("admin_authenticated", None)
+    return redirect(url_for("main.admin_login"))
+
+
+@main_bp.route("/admin", methods=["GET"])
+@admin_required
+def admin_dashboard():
+    cleanup_expired_reports()
+    return render_template("admin.html", metrics=dashboard_metrics())
